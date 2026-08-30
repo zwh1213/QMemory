@@ -16,7 +16,11 @@
 
 ## 快速开始
 
+源码仓库：`git@github.com:zwh1213/QMemory.git`
+
 ```bash
+git clone git@github.com:zwh1213/QMemory.git
+cd QMemory
 pip install -r requirements.txt
 python main.py
 ```
