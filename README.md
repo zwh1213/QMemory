@@ -69,7 +69,11 @@ Win10 / Win11 双击 `QMemory.exe` 即自动打开浏览器进入控制台，无
 
 ![列表页](imgs/shot_list.png)
 
+![详情页](imgs/shot_detail.png)
+
 ![控制台](imgs/shot_console.png)
+
+![运行日志](imgs/shot_log.png)
 
 ## 支持一下
 
