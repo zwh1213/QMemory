@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Q忆 · 控制台</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://db.onlinewebfonts.com/c/8cb707a9b8a73f8a7403336b861c3074?family=BubbledotICG-FinePos" rel="stylesheet">
+<style>
+@font-face{font-family:'Zpix';src:url('https://cdn.jsdelivr.net/gh/SolidZORO/zpix-pixel-font@master/website/zpix.woff2') format('woff2');font-display:swap}
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#000; --text:#fff; --muted:#9a9a9a; --dim:#5c5c5c;
+  --line:rgba(255,255,255,.16); --line2:rgba(255,255,255,.08);
+  --card:rgba(10,12,18,.40); --card2:rgba(255,255,255,.045); --card3:rgba(255,255,255,.02);
+  --glass:rgba(255,255,255,.07); --card-shadow:0 10px 30px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.07);
+  --accent:#7ee787; --accent2:#ffd166; --soft:rgba(126,231,135,.14); --tint:#7ee787;
+  --nav-shadow:0 4px 14px rgba(0,0,0,.5);
+  --font-sans:"Inter","Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --font-disp:"BubbledotICG-FinePos","Zpix","Geist Pixel Circle","Courier New",monospace;
+}
+:root[data-palette="rose"]{--accent:#ff8fa3;--accent2:#ffc857;--soft:rgba(255,143,163,.15);--tint:#ff6b81}
+:root[data-palette="aurora"]{--accent:#64ffda;--accent2:#8aa2ff;--soft:rgba(100,255,218,.15);--tint:#64ffda}
+:root[data-palette="mint"]{--accent:#4ade80;--accent2:#2dd4bf;--soft:rgba(74,222,128,.15);--tint:#4ade80}
+:root[data-palette="amber"]{--accent:#ffb454;--accent2:#ff7a6b;--soft:rgba(255,180,84,.15);--tint:#ffb454}
+:root[data-palette="violet"]{--accent:#c792ea;--accent2:#74a0ff;--soft:rgba(199,146,234,.15);--tint:#c792ea}
+:root[data-theme="light"]{
+  --bg:#000; --text:#17181c; --muted:#565b66; --dim:#8b909b;
+  --line:rgba(0,0,0,.16); --line2:rgba(0,0,0,.09);
+  --card:rgba(255,255,255,.78); --card2:rgba(255,255,255,.55); --card3:rgba(255,255,255,.4);
+  --glass:rgba(255,255,255,.82); --card-shadow:0 12px 34px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.85);
+  --nav-shadow:0 4px 14px rgba(0,0,0,.4);
+}
+:root[data-theme="light"] .scanlines{opacity:.4}
+:root[data-theme="light"] .header{background:linear-gradient(150deg,rgba(255,255,255,.94) 0%,rgba(255,255,255,.68) 55%,rgba(255,255,255,.88) 100%);backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5);border-color:rgba(255,255,255,.32)}
+:root[data-theme="light"] .card{background:linear-gradient(165deg,rgba(255,255,255,.96) 0%,rgba(255,255,255,.74) 45%,rgba(255,255,255,.9) 100%)}
+:root[data-theme="light"] .stat{background:linear-gradient(165deg,rgba(255,255,255,.92) 0%,rgba(255,255,255,.7) 55%,rgba(255,255,255,.86) 100%)}
+:root[data-theme="light"] .card h2{color:var(--text)}
+:root[data-theme="light"] .card:hover{border-color:rgba(0,0,0,.28)}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--font-sans);background:var(--bg);color:var(--text);
+  font-size:14px;line-height:1.6;min-height:100vh;overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+.bg-video-wrap{position:fixed;inset:0;z-index:0;pointer-events:none}
+.bg-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.88}
+.bg-tint{position:absolute;inset:0;background:var(--tint);opacity:.2;mix-blend-mode:soft-light}
+#pxbg{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.8}
+:root[data-theme="light"] .bg-video{opacity:.88;filter:saturate(1)}
+.scanlines{position:fixed;inset:0;z-index:2;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.028) 0 1px,transparent 1px 3px);mix-blend-mode:overlay}
+.page{position:relative;z-index:3;max-width:940px;margin:0 auto;padding:18px 18px 56px;opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
+body.loaded .page{opacity:1;transform:none}
+/* ===== 顶栏 ===== */
+.header{position:sticky;top:10px;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:12px 14px;margin-bottom:22px;border-radius:14px;border:1px solid var(--line);background:color-mix(in srgb,var(--bg) 58%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:border-color .3s ease,box-shadow .3s ease}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.logo{width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;position:relative;background:#fff;box-shadow:var(--nav-shadow);color:#111;font-family:var(--font-disp);font-size:22px;transition:transform .18s ease}
+.logo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
+.logo:hover{transform:scale(1.05)}
+.brand-txt{min-width:0}
+.brand-txt h1{font-family:var(--font-disp);font-size:21px;font-weight:400;letter-spacing:.02em;line-height:1.1;white-space:nowrap}
+.brand-txt p{color:var(--muted);font-family:var(--font-disp);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.tools{display:flex;align-items:center;gap:9px}
+.btn{height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text);font-family:var(--font-sans);font-size:13px;cursor:pointer;backdrop-filter:blur(10px);transition:transform .16s ease,border-color .2s ease,background .2s ease}
+.btn:hover{transform:translateY(-1px);border-color:var(--accent)}
+.btn:active{transform:translateY(0) scale(.97)}
+a.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;line-height:1}
+.btn.primary{background:#fff;color:#111;box-shadow:0 0 0 1px rgba(255,255,255,.15),0 0 22px var(--soft),0 0 44px rgba(255,255,255,.06)}
+.btn.primary:hover{border-color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.28),0 0 30px var(--soft)}
+.btn.danger{color:#ff6b6b;border-color:rgba(255,107,107,.42)}
+.btn.danger:hover{border-color:#ff6b6b;background:rgba(255,107,107,.12)}
+.btn:disabled{opacity:.45;cursor:default;transform:none}
+#alertCancel{display:inline-flex;align-items:center;justify-content:center}
+/* ===== 调色盘 ===== */
+.pal-wrap{position:fixed;top:80px;right:16px;z-index:60;opacity:0;transform:translateY(-8px);pointer-events:none;transition:opacity .22s ease,transform .22s ease}
+.pal-wrap.open{opacity:1;transform:none;pointer-events:auto}
+.pal-panel{background:#1a1a1c;border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:14px;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+.pal-title{display:block;font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;font-family:var(--font-disp)}
+.pal-swatches{display:flex;gap:10px}
+.sw{width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;background:var(--sc);box-shadow:0 0 0 1px rgba(255,255,255,.25) inset;transition:transform .16s ease,box-shadow .2s ease}
+.sw:hover{transform:scale(1.12)}
+.sw.on{box-shadow:0 0 0 2px #fff inset,0 0 0 4px #0d0d0f,0 0 14px var(--sc)}
+:root[data-theme="light"] .pal-panel{background:#fff;border-color:rgba(0,0,0,.14)}
+:root[data-theme="light"] .sw.on{box-shadow:0 0 0 2px #111 inset,0 0 0 4px #fff,0 0 14px var(--sc)}
+/* ===== 卡片 ===== */
+.card{border-radius:16px;border:1px solid var(--line);background:linear-gradient(160deg,color-mix(in srgb,var(--soft) 26%,rgba(7,9,14,.68)) 0%,rgba(7,9,14,.76) 46%,color-mix(in srgb,var(--tint) 9%,rgba(7,9,14,.64)) 100%);backdrop-filter:blur(18px) saturate(1.5);-webkit-backdrop-filter:blur(18px) saturate(1.5);box-shadow:var(--card-shadow);padding:20px 22px;margin-bottom:18px;transition:transform .2s ease,border-color .2s ease}
+.card:hover{transform:translateY(-2px);border-color:var(--line)}
+.card h2{font-family:var(--font-disp);font-size:13px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat{display:flex;flex-direction:column;align-items:center;gap:2px;padding:14px 10px;border-radius:14px;border:1px solid var(--line);background:linear-gradient(165deg,color-mix(in srgb,var(--soft) 20%,rgba(7,9,14,.68)) 0%,rgba(7,9,14,.76) 55%,color-mix(in srgb,var(--tint) 7%,rgba(7,9,14,.62)) 100%);backdrop-filter:blur(16px) saturate(1.4);box-shadow:var(--card-shadow);transition:transform .2s ease,border-color .2s ease}
+.stat:hover{transform:translateY(-2px);border-color:var(--accent)}
+.stat b{font-family:var(--font-disp);font-size:22px;font-weight:400;color:var(--text);line-height:1.1}
+.stat small{font-size:11px;color:var(--muted);letter-spacing:.04em}
+.stat em{font-style:normal;font-size:11px;color:var(--dim);font-family:ui-monospace,Consolas,monospace;line-height:1.3}
+.statusline{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:14px;flex-wrap:wrap}
+.statusline .tag{font-family:var(--font-disp);padding:2px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font-size:11px}
+.statusline .tag.run{color:var(--accent);border-color:var(--accent)}
+.statusline .tag.warn{color:#ffd166;border-color:#ffd166}
+.statusline .tag.bad{color:#ff6b6b;border-color:#ff6b6b}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+/* ===== 表单 ===== */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600}
+.field input[type=text],.field textarea{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s ease,box-shadow .2s ease}
+.field input:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--soft)}
+.field textarea{min-height:104px;resize:vertical;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+.field .hint{font-size:11px;color:var(--dim);margin-top:5px;line-height:1.6}
+.path-row{display:flex;gap:8px}
+.path-row input{flex:1;min-width:0}
+.path-row .btn{flex:none;height:42px;padding:0 14px}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;border:1px solid var(--line2);border-radius:12px;background:var(--card3);margin-bottom:10px}
+.toggle b{font-size:13px}
+.toggle span{display:block;font-size:11px;color:var(--dim);margin-top:2px}
+.switch{position:relative;width:44px;height:26px;flex:none}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:var(--dim);border-radius:999px;transition:.25s;cursor:pointer}
+.slider:before{content:"";position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.25s;box-shadow:0 2px 5px rgba(0,0,0,.3)}
+.switch input:checked+.slider{background:var(--accent);box-shadow:0 0 10px var(--soft)}
+.switch input:checked+.slider:before{transform:translateX(18px)}
+/* ===== 横幅 ===== */
+.banner{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-140%);padding:12px 24px;border-radius:14px;font-size:13px;font-weight:600;color:var(--text);background:color-mix(in srgb,var(--bg) 82%,transparent);border:1px solid var(--line);backdrop-filter:blur(16px);box-shadow:var(--card-shadow);transition:transform .4s cubic-bezier(.22,1,.36,1);z-index:99;max-width:90vw;text-align:center}
+.banner.show{transform:translateX(-50%) translateY(0)}
+.banner.done{border-color:var(--accent);box-shadow:0 0 24px var(--soft),var(--card-shadow)}
+.banner.blocked{border-color:#ff6b6b;box-shadow:0 0 24px rgba(255,107,107,.28),var(--card-shadow)}
+.banner.info{border-color:#64ffda}
+#bannerText{flex:1}
+#bannerClose{flex:none;cursor:pointer;font-size:15px;color:var(--muted);line-height:1;padding:2px 6px;border-radius:6px;transition:color .2s ease,background .2s ease}
+#bannerClose:hover{color:var(--text);background:var(--card2)}
+.alert-text{font-size:13px;color:var(--text);text-align:left;white-space:pre-wrap;word-break:break-all;margin-bottom:16px;max-height:44vh;overflow-y:auto}
+/* ===== 日志弹窗 ===== */
+#logModal .qr-box{width:min(760px,92vw);text-align:left}
+.log-view{width:100%;max-height:60vh;min-height:320px;overflow-y:auto;background:rgba(0,0,0,.4);border:1px solid var(--line2);border-radius:10px;padding:12px 14px;font-family:ui-monospace,Consolas,Menlo,monospace;font-size:12px;line-height:1.65;color:#c39bfa;white-space:pre-wrap;word-break:break-all;margin-bottom:14px}
+.log-view::-webkit-scrollbar{width:8px}
+.log-view::-webkit-scrollbar-thumb{background:var(--dim);border-radius:4px}
+:root[data-theme="light"] #logModal .qr-box{background:linear-gradient(165deg,rgba(255,255,255,.96) 0%,rgba(255,255,255,.74) 45%,rgba(255,255,255,.9) 100%)}
+:root[data-theme="light"] .log-view{background:rgba(0,0,0,.06);color:#7c3aed}
+/* ===== 扫码弹窗 ===== */
+.qr-modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.qr-box{width:min(320px,90vw);padding:22px;border-radius:16px;border:1px solid var(--line);background:linear-gradient(160deg,color-mix(in srgb,var(--soft) 26%,rgba(7,9,14,.68)) 0%,rgba(7,9,14,.76) 46%,color-mix(in srgb,var(--tint) 9%,rgba(7,9,14,.64)) 100%);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);box-shadow:var(--card-shadow);text-align:center}
+.qr-box h3{font-family:var(--font-disp);font-size:13px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+.qr-box img{width:200px;height:200px;image-rendering:pixelated;border-radius:10px;border:1px solid var(--line);background:#fff;padding:8px;display:block;margin:0 auto 12px}
+.qr-status{font-size:12px;color:var(--muted);min-height:20px;margin-bottom:12px}
+:root[data-theme="light"] .qr-modal{background:rgba(0,0,0,.32)}
+:root[data-theme="light"] .qr-box{background:linear-gradient(165deg,rgba(255,255,255,.96) 0%,rgba(255,255,255,.74) 45%,rgba(255,255,255,.9) 100%)}
+@media (max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}.tools{width:100%}.header{gap:10px}}
+</style>
+</head>
+<body>
+<div class="bg-video-wrap">
+  <video class="bg-video" autoplay muted loop playsinline>
+    <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_012548_ef22562c-c0ae-4816-ad9d-f8922af4e6a7.mp4" type="video/mp4">
+  </video>
+  <div class="bg-tint"></div>
+</div>
+<canvas id="pxbg"></canvas>
+<div class="scanlines"></div>
+
+<div class="page">
+  <header class="header" id="topbar">
+    <div class="brand">
+      <div class="logo"><span class="logo-txt">忆</span><img id="logoImg" alt="" referrerpolicy="no-referrer"></div>
+      <div class="brand-txt">
+        <h1 id="brandName">Q忆</h1>
+        <p id="brandSub">CONTROL PANEL</p>
+      </div>
+    </div>
+    <div class="tools">
+      <a class="btn" href="/">◀ 档案</a>
+      <button class="btn" id="palBtn" type="button" title="主题配色">◈</button>
+      <button class="btn" id="themeBtn" type="button" title="明暗切换">◐</button>
+    </div>
+  </header>
+
+  <div id="banner" class="banner"><span id="bannerText"></span><span id="bannerClose" title="关闭">✕</span></div>
+  <div id="qrModal" class="qr-modal" style="display:none">
+    <div class="qr-box">
+      <h3>手机扫码登录</h3>
+      <img id="qrImg" alt="二维码">
+      <p id="qrStatus" class="qr-status">获取二维码中…</p>
+      <div class="btns" style="justify-content:center">
+        <button class="btn" id="qrRefresh" type="button">刷新二维码</button>
+        <button class="btn danger" id="qrClose" type="button">取消</button>
+      </div>
+    </div>
+  </div>
+  <div id="alertModal" class="qr-modal" style="display:none">
+    <div class="qr-box" style="width:min(360px,90vw)">
+      <h3 id="alertTitle">提示</h3>
+      <p id="alertText" class="alert-text"></p>
+      <div class="btns" style="justify-content:center">
+        <button class="btn primary" id="alertOk" type="button">知道了</button>
+        <button class="btn" id="alertCancel" type="button" style="display:none">取消</button>
+      </div>
+    </div>
+  </div>
+  <div id="logModal" class="qr-modal" style="display:none">
+    <div class="qr-box">
+      <h3>采集日志</h3>
+      <pre id="logView" class="log-view"></pre>
+      <div class="btns" style="justify-content:center">
+        <button class="btn" id="logClose" type="button">关闭</button>
+      </div>
+    </div>
+  </div>
+  <div class="pal-wrap" id="palWrap"><div class="pal-panel"><span class="pal-title">PIXEL THEME</span><div class="pal-swatches" id="palSwatches">
+    <button class="sw" data-p="violet" style="--sc:#c792ea" title="紫外"></button>
+    <button class="sw" data-p="rose" style="--sc:#ff8fa3" title="蔷薇"></button>
+    <button class="sw" data-p="aurora" style="--sc:#64ffda" title="极光"></button>
+    <button class="sw" data-p="mint" style="--sc:#4ade80" title="薄荷"></button>
+    <button class="sw" data-p="amber" style="--sc:#ffb454" title="琥珀"></button>
+    <button class="sw" data-p="default" style="--sc:#7ee787" title="翠绿"></button>
+  </div></div></div>
+
+  <section class="card">
+    <h2>采集状态</h2>
+    <div class="stats">
+      <div class="stat"><b id="stStatus">—</b><small>状态</small><em id="stPhase"></em></div>
+      <div class="stat"><b id="stPage">0</b><small>页</small><em>offset <span id="stOffset">0</span></em></div>
+      <div class="stat"><b id="stWritten">0</b><small>已写入</small><em>帖子</em></div>
+      <div class="stat"><b id="stMedia">0</b><small>媒体</small><em>图 <span id="stPhotos">0</span> · 视频 <span id="stVideos">0</span></em></div>
+    </div>
+    <div class="statusline">
+      <span class="tag" id="stTag">—</span>
+      <span id="stTarget"></span><span id="stError"></span>
+    </div>
+    <div class="btns">
+      <button class="btn primary" id="btnStart">开始采集</button>
+      <button class="btn danger" id="btnStop" disabled>停止</button>
+      <button class="btn" id="btnWeb">打开档案网页</button>
+      <button class="btn danger" id="btnClear">清空数据</button>
+      <button class="btn" id="btnLogs">查看日志</button>
+    </div>
+    <div class="hint" style="margin-top:12px">「开始采集」会从上次进度<b>续采</b>；点「清空数据」清空后，再开始采集才会<b>从头全部重采</b>。重启程序会自动读取已有数据恢复进度。</div>
+  </section>
+
+  <section class="card">
+    <h2>QQ 号</h2>
+    <div class="field">
+      <label>目标 QQ 号</label>
+      <input id="targetUin" type="text" placeholder="目标 QQ 号">
+    </div>
+    <div class="statusline"><span id="cookieInfo">读取中…</span></div>
+    <div class="btns" style="margin-bottom:12px">
+      <button class="btn primary" id="btnAutoCookie">自动获取 Cookie（手机扫码）</button>
+      <button class="btn" id="btnManual">手动输入 Cookie</button>
+    </div>
+    <div id="manualBox" class="field" style="display:none">
+      <label>粘贴 Cookie（完整字符串或 curl 命令均可）</label>
+      <textarea id="cookieText" placeholder="p_skey=xxx; uin=o1234567; …  或   curl --url '…' -b '…'"></textarea>
+      <div class="hint">浏览器 DevTools → 网络 → 任一 qzone 请求 → 复制 Cookie 头整段，或整条 curl 命令。</div>
+      <div class="btns"><button class="btn primary" id="btnSaveCookie">保存 Cookie</button></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>采集与存储</h2>
+    <div class="toggle">
+      <div><b>下载图片</b><span>采集时同步保存原图，网页优先用本地文件，可离线回看</span></div>
+      <label class="switch"><input type="checkbox" id="dlPhotos" checked><span class="slider"></span></label>
+    </div>
+    <div class="toggle">
+      <div><b>下载视频</b><span>视频较大，建议开启；关闭则网页走远程链接（可能失效）</span></div>
+      <label class="switch"><input type="checkbox" id="dlVideos" checked><span class="slider"></span></label>
+    </div>
+    <div class="field">
+      <label>图片保存路径</label>
+      <div class="path-row">
+        <input id="photosDir" type="text" placeholder="output/imgs">
+        <button class="btn" id="btnPhotosDir" type="button">选择</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>视频保存路径</label>
+      <div class="path-row">
+        <input id="videosDir" type="text" placeholder="output/videos">
+        <button class="btn" id="btnVideosDir" type="button">选择</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>帖子数据保存路径（JSON 数据）</label>
+      <div class="path-row">
+        <input id="dataDir" type="text" placeholder="output/datas">
+        <button class="btn" id="btnDataDir" type="button">选择</button>
+      </div>
+    </div>
+    <div class="hint" style="margin-bottom:12px">路径可留空使用默认值（相对于程序所在目录）；相对或绝对路径均可。</div>
+    <div class="btns"><button class="btn primary" id="btnSaveSettings">保存设置</button></div>
+  </section>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let lastStatus = '';
+
+let bannerTimer = null;
+function banner(type, text, duration){
+  const b = $('banner');
+  b.className = 'banner ' + type + ' show';
+  $('bannerText').textContent = text;
+  // 默认 4 秒后自动消失，可传 duration 覆盖（如停止提示 1 秒）
+  if (duration === undefined) duration = 4000;
+  if (bannerTimer) clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(() => b.classList.remove('show'), duration);
+}
+$('bannerClose').onclick = () => { if (bannerTimer) clearTimeout(bannerTimer); $('banner').classList.remove('show'); };
+
+function alertBox(title, text){
+  $('alertOk').textContent = '知道了';
+  $('alertCancel').style.display = 'none';
+  $('alertTitle').textContent = title;
+  $('alertText').textContent = text;
+  $('alertModal').style.display = 'flex';
+  $('alertOk').onclick = () => { $('alertModal').style.display = 'none'; };
+}
+function confirmBox(title, text, onYes){
+  $('alertOk').textContent = '确认';
+  $('alertCancel').style.display = 'inline-flex';
+  $('alertTitle').textContent = title;
+  $('alertText').textContent = text;
+  $('alertModal').style.display = 'flex';
+  $('alertOk').onclick = () => { $('alertModal').style.display = 'none'; if (onYes) onYes(); };
+  $('alertCancel').onclick = () => { $('alertModal').style.display = 'none'; };
+}
+
+const STATUS_META = {
+  idle:'空闲', running:'采集中', stopping:'停止中', stopped:'已停止',
+  blocked:'疑似风控', completed:'已完成', failed:'出错', requesting:'请求中'
+};
+
+function paintTag(status){
+  const t = $('stTag');
+  t.textContent = STATUS_META[status] || status;
+  t.className = 'tag' + (status==='running'||status==='requesting' ? ' run' : status==='blocked'||status==='failed' ? ' bad' : status==='stopping' ? ' warn' : '');
+}
+
+async function refreshStatus(){
+  try{
+    const s = await fetch('/api/jobs/status').then(r => r.json());
+    $('stStatus').textContent = STATUS_META[s.status] || s.status;
+    $('stPhase').textContent = s.phase || '';
+    $('stPage').textContent = s.page || 0;
+    $('stOffset').textContent = s.offset || 0;
+    $('stWritten').textContent = s.written || 0;
+    $('stPhotos').textContent = s.photos || 0;
+    $('stVideos').textContent = s.videos || 0;
+    $('stMedia').textContent = ((s.photos||0) + (s.videos||0)) || 0;
+    $('stTarget').textContent = s.target_uin ? '目标 QQ ' + s.target_uin : '';
+    $('stError').textContent = s.error || '';
+    $('stError').style.color = s.error ? 'var(--warn)' : '';
+    $('btnStart').disabled = s.status==='running' || s.status==='requesting';
+    $('btnStart').textContent = (s.status==='running' || s.status==='requesting') ? '采集中…' : '开始采集';
+    $('btnStop').disabled = !(s.status==='running' || s.status==='requesting' || s.status==='stopping');
+    paintTag(s.status);
+    if (s.status === 'blocked' && lastStatus !== 'blocked'){
+      alertBox('疑似风控', '⚠ 请求被拦截：' + (s.error || 'WAF 拦截') + '\n\n请更换 Cookie 或稍后再试。\n详细日志见程序目录 output/datas/crawl.log');
+    }
+    if (s.status === 'failed' && lastStatus !== 'failed'){
+      alertBox('采集出错', '✕ ' + (s.error || '未知错误') + '\n\n详细日志见程序目录 output/datas/crawl.log');
+    }
+    if (s.status === 'completed' && (lastStatus === 'running' || lastStatus === 'requesting')){
+      alertBox('采集完成', '✓ 采集完成，共写入 ' + (s.written||0) + ' 条。\n\n这是正常抓完（不是被封），可以打开档案查看。\n数据已写入程序目录 output/datas/ 下，媒体在 output/imgs、output/videos。');
+    }
+    lastStatus = s.status;
+  }catch(e){}
+}
+
+async function refreshConfig(){
+  try{
+    const c = await fetch('/api/config/status').then(r => r.json());
+    const bn = $('brandName'), bs = $('brandSub'), li = $('logoImg');
+    if (c.ok && c.uin){
+      if (c.nickname) bn.textContent = c.nickname;
+      bs.textContent = 'QQ ' + c.uin;
+      if (c.avatar) li.src = c.avatar;
+    }
+    if (!c.ok){ $('cookieInfo').textContent = '未配置 Cookie：' + (c.error||''); return; }
+    $('cookieInfo').textContent = '已配置 · QQ ' + c.uin + ' · g_tk ' + c.g_tk + ' · ' + c.source;
+    $('targetUin').value = c.target_uin || '';
+    $('photosDir').value = c.photos_dir || 'output/imgs';
+    $('videosDir').value = c.videos_dir || 'output/videos';
+    $('dataDir').value = c.data_dir || 'output/datas';
+    $('dlPhotos').checked = !!c.download_photos;
+    $('dlVideos').checked = !!c.download_videos;
+  }catch(e){}
+}
+
+$('btnLogs').onclick = async () => {
+  $('logModal').style.display = 'flex';
+  $('logView').textContent = '加载中…';
+  try{
+    const r = await fetch('/api/logs').then(x => x.json());
+    $('logView').textContent = r.text || '（暂无日志）';
+  }catch(e){ $('logView').textContent = '读取日志失败'; }
+  $('logView').scrollTop = $('logView').scrollHeight;
+};
+$('logClose').onclick = () => $('logModal').style.display = 'none';
+$('btnStart').onclick = () => fetch('/api/jobs/start',{method:'POST'}).then(()=>setTimeout(refreshStatus,300));
+$('btnStop').onclick = () => {
+  banner('info', '正在停止…', 1000);
+  fetch('/api/jobs/stop',{method:'POST'}).then(()=>setTimeout(refreshStatus,300));
+};
+$('btnClear').onclick = () => confirmBox('清空数据', '将删除全部采集数据（帖子、进度状态、媒体文件），且不可恢复。\n\n确认后再点「开始采集」，才会从头全部重新采集。', async () => {
+  const r = await fetch('/api/data/clear',{method:'POST'}).then(x=>x.json());
+  if (r.ok){
+    banner('done', '✓ 已清空：' + (r.files||[]).concat(r.dirs||[]).join('、'));
+    setTimeout(refreshStatus, 300);
+  }else{
+    banner('blocked', '✕ 清空失败：' + (r.error||''));
+  }
+});
+$('btnWeb').onclick = () => { location.href = '/'; };
+function saveSettings(){
+  const body = {
+    target_uin: $('targetUin').value.trim(),
+    photos_dir: $('photosDir').value.trim(),
+    videos_dir: $('videosDir').value.trim(),
+    data_dir: $('dataDir').value.trim(),
+    download_photos: $('dlPhotos').checked,
+    download_videos: $('dlVideos').checked,
+  };
+  return fetch('/api/config/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+}
+$('btnSaveSettings').onclick = async () => {
+  const r = await saveSettings();
+  banner(r.ok ? 'done' : 'blocked', r.ok ? '✓ 设置已保存' : (r.error||'保存失败'));
+  refreshConfig();
+};
+$('btnManual').onclick = () => { const b = $('manualBox'); b.style.display = b.style.display==='none' ? 'block' : 'none'; };
+$('btnSaveCookie').onclick = async () => {
+  const text = $('cookieText').value.trim();
+  if (!text){ banner('blocked','请粘贴 Cookie'); return; }
+  const r = await fetch('/api/config/cookie',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text, target_uin: $('targetUin').value.trim()})}).then(x=>x.json());
+  if (r.ok){ banner('done','✓ Cookie 已保存 · QQ ' + r.uin); $('manualBox').style.display='none'; }
+  else banner('blocked','✕ ' + (r.error||'保存失败'));
+  refreshConfig();
+};
+/* ---- 手机扫码登录 ---- */
+let qrTimer = null, qrRefreshTimer = null, qrId = null;
+function qrShow(){ $('qrModal').style.display = 'flex'; }
+function qrHide(){ if (qrTimer){ clearInterval(qrTimer); qrTimer = null; } if (qrRefreshTimer){ clearInterval(qrRefreshTimer); qrRefreshTimer = null; } qrId = null; $('qrModal').style.display = 'none'; }
+async function qrFetch(){
+  $('qrStatus').textContent = '获取二维码中…';
+  try{
+    const r = await fetch('/api/cookie/qr').then(x => x.json());
+    if (!r.ok){ $('qrStatus').textContent = '获取二维码失败：' + (r.error || ''); return; }
+    qrId = r.qr_id;
+    $('qrImg').src = r.image;
+    $('qrStatus').textContent = '打开手机 QQ 扫一扫（每 15 秒自动刷新）';
+    if (qrTimer) clearInterval(qrTimer);
+    qrTimer = setInterval(qrPoll, 2500);
+    if (qrRefreshTimer) clearInterval(qrRefreshTimer);
+    qrRefreshTimer = setInterval(() => {
+      // 已扫码等待确认时不刷新，避免打断登录
+      if (($('qrStatus').textContent || '').indexOf('已扫码') >= 0) return;
+      qrFetch();
+    }, 15000);
+  }catch(e){ $('qrStatus').textContent = '获取二维码失败'; }
+}
+async function qrPoll(){
+  if (!qrId) return;
+  try{
+    const r = await fetch('/api/cookie/qr/' + qrId).then(x => x.json());
+    if (r.state === 'waiting'){ $('qrStatus').textContent = '等待扫码…'; }
+    else if (r.state === 'scanned'){ $('qrStatus').textContent = '已扫码，请在手机上确认登录'; }
+    else if (r.state === 'expired'){
+      // 二维码过期，自动刷新一个新二维码
+      $('qrStatus').textContent = '二维码已过期，自动刷新…';
+      qrFetch();
+    }
+    else if (r.state === 'ok'){
+      clearInterval(qrTimer); qrTimer = null; qrId = null;
+      $('qrStatus').textContent = '✓ 登录成功';
+      banner('done', '✓ 已获取 QQ ' + r.uin + ' 的 Cookie');
+      refreshConfig();
+      setTimeout(qrHide, 900);
+    }else{
+      clearInterval(qrTimer); qrTimer = null; qrId = null;
+      $('qrStatus').textContent = '✕ ' + (r.error || '登录失败');
+    }
+  }catch(e){}
+}
+$('btnAutoCookie').onclick = () => { qrShow(); qrFetch(); };
+$('qrClose').onclick = qrHide;
+$('qrRefresh').onclick = qrFetch;
+function bindChoose(btnId, inputId){
+  $(btnId).onclick = () => banner('info', '浏览器无法直接选择文件夹，请手动填写路径（相对或绝对路径均可）');
+}
+bindChoose('btnPhotosDir','photosDir');
+bindChoose('btnVideosDir','videosDir');
+bindChoose('btnDataDir','dataDir');
+
+/* ---- 明暗 + 调色盘（与档案页共享） ---- */
+var PALETTES=['default','rose','aurora','mint','amber','violet'];
+function setPalette(p){var root=document.documentElement;if(PALETTES.indexOf(p)<0)p='default';root.setAttribute('data-palette',p);try{localStorage.setItem('qq-palette',p);}catch(e){}Array.prototype.forEach.call(document.querySelectorAll('.sw'),function(b){b.classList.toggle('on',b.getAttribute('data-p')===p);});if(window.__pxRefresh)window.__pxRefresh();}
+function toggleTheme(){var root=document.documentElement,nx=root.getAttribute('data-theme')==='dark'?'light':'dark';root.setAttribute('data-theme',nx);try{localStorage.setItem('qq-theme',nx);}catch(e){}if(window.__pxRefresh)window.__pxRefresh();}
+function palInit(){var pw=document.getElementById('palWrap'),pb=document.getElementById('palBtn'),ps=document.getElementById('palSwatches');try{setPalette(localStorage.getItem('qq-palette')||'violet');}catch(e){setPalette('violet');}if(pb&&pw)pb.addEventListener('click',function(e){e.stopPropagation();pw.classList.toggle('open');});document.addEventListener('click',function(e){if(pw&&pw.classList.contains('open')&&!e.target.closest('.pal-wrap'))pw.classList.remove('open');});if(ps)ps.addEventListener('click',function(e){var b=e.target.closest('.sw');if(b){setPalette(b.getAttribute('data-p'));}});}
+try{if(localStorage.getItem('qq-theme'))document.documentElement.setAttribute('data-theme',localStorage.getItem('qq-theme'));}catch(e){}
+palInit();
+document.getElementById('themeBtn').addEventListener('click',toggleTheme);
+
+/* ---- 原创像素背景动画（与档案页一致） ---- */
+(function(){
+  var cv=document.getElementById('pxbg');if(!cv||!cv.getContext)return;
+  var ctx=cv.getContext('2d'),W=0,H=0,DPR=window.devicePixelRatio||1,accent='#7ee787',R=126,G=231,B=135;
+  function size(){W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);}
+  size();window.addEventListener('resize',size);
+  var reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function isLight(){return document.documentElement.getAttribute('data-theme')==='light';}
+  function hexRgb(h){h=(h||'#7ee787').replace('#','');if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];var n=parseInt(h,16);R=(n>>16)&255;G=(n>>8)&255;B=n&255;}
+  function refresh(){var a=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();if(a){accent=a;hexRgb(accent);}}
+  window.__pxRefresh=refresh;
+  var ps=[],N=Math.max(28,Math.min(85,Math.round(innerWidth*innerHeight/20000))),i;
+  function mk(){return{x:Math.random()*W,y:H+Math.random()*40+6,s:1+Math.random()*2,vy:.12+Math.random()*.5,vx:(Math.random()-.5)*.1,a:.05+Math.random()*.22,tw:Math.random()*6.28,ts:.4+Math.random()*1.4,green:Math.random()<.22};}
+  for(i=0;i<N;i++)ps.push(mk());
+  var star=null;
+  function frame(){
+    ctx.clearRect(0,0,W,H);var lt=isLight();
+    var g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'rgba(8,12,10,0)');g.addColorStop(1,'rgba('+Math.round(R*.12)+','+Math.round(G*.16)+','+Math.round(B*.12)+',0.32)');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    var hg=ctx.createRadialGradient(W*.5,H*.52,0,W*.5,H*.52,Math.max(W,H)*.55);
+    hg.addColorStop(0,'rgba('+R+','+G+','+B+',0.12)');hg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=hg;ctx.fillRect(0,0,W,H);
+    for(i=0;i<ps.length;i++){var p=ps[i];p.y-=p.vy;p.x+=p.vx;p.tw+=p.ts*.016;if(p.y<-12||p.x<-12||p.x>W+12){ps[i]=mk();continue;}var al=p.a*(.55+.45*Math.sin(p.tw));ctx.fillStyle='rgba('+R+','+G+','+B+','+(al*.72).toFixed(3)+')';ctx.fillRect(p.x,p.y,p.s,p.s);}
+    if(!reduced&&Math.random()<.005&&!star)star={x:Math.random()*W,y:0,l:40+Math.random()*60,sx:5+Math.random()*7,sy:2+Math.random()*2.5};
+    if(star){star.x-=star.sx;star.y+=star.sy;for(var j=0;j<star.l;j++){var sa=(1-j/star.l)*.55;ctx.fillStyle='rgba(255,255,255,'+sa.toFixed(3)+')';ctx.fillRect(star.x+j*.6,star.y+j*.4,1,1);}if(star.x<-star.l||star.y>H)star=null;}
+    if(reduced)return;requestAnimationFrame(frame);
+  }
+  refresh();if(reduced)frame();else requestAnimationFrame(frame);
+})();
+
+document.body.classList.add('loaded');
+refreshStatus(); refreshConfig();
+setInterval(refreshStatus, 1500);
+</script>
+</body>
+</html>

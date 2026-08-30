@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# IDE / 编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 打包（PyInstaller）
+build/
+dist/
+*.spec
+build.ps1
+build.md
+
+# 运行时生成 / 用户数据（含隐私，不提交）
+config.json
+curl.txt
+output/
+output_pc_fresh/
+output_pc_full/
+videos/
+media/
+
+# 旧文档截图（README 已改用 imgs/）
+docs/
