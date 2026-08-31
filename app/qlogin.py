@@ -111,14 +111,5 @@ class QrLogin:
                 referer=f"https://user.qzone.qq.com/{uin}/infocenter?loginfrom=31")
         except ValueError as exc:
             return {"state": "error", "error": str(exc)}
-        cfg = cookiemgr.load(self.root)
-        cfg.update({
-            "cookies": conf["cookies"], "uin": conf["uin"], "g_tk": conf["g_tk"],
-            "user_agent": conf["user_agent"], "referer": conf["referer"],
-            "source": "qr", "nickname": nick,
-        })
-        if not cfg.get("target_uin"):
-            cfg["target_uin"] = conf["uin"]
-        cookiemgr.save(self.root, cfg)
         return {"state": "ok", "ok": True, "uin": conf["uin"], "g_tk": conf["g_tk"],
-                "nickname": nick}
+                "nickname": nick, "conf": conf}

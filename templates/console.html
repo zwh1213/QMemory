@@ -56,13 +56,27 @@ body{
 body.loaded .page{opacity:1;transform:none}
 /* ===== 顶栏 ===== */
 .header{position:sticky;top:10px;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:12px 14px;margin-bottom:22px;border-radius:14px;border:1px solid var(--line);background:color-mix(in srgb,var(--bg) 58%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:border-color .3s ease,box-shadow .3s ease}
-.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand{position:relative;display:flex;align-items:center;gap:12px;min-width:0}
 .logo{width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;position:relative;background:#fff;box-shadow:var(--nav-shadow);color:#111;font-family:var(--font-disp);font-size:22px;transition:transform .18s ease}
 .logo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
 .logo:hover{transform:scale(1.05)}
 .brand-txt{min-width:0}
 .brand-txt h1{font-family:var(--font-disp);font-size:21px;font-weight:400;letter-spacing:.02em;line-height:1.1;white-space:nowrap}
 .brand-txt p{color:var(--muted);font-family:var(--font-disp);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.prof-panel{position:absolute;top:calc(100% + 10px);left:0;z-index:60;min-width:250px;max-width:330px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(160deg,color-mix(in srgb,var(--card) 94%,transparent),color-mix(in srgb,var(--card2) 96%,transparent));box-shadow:var(--card-shadow);backdrop-filter:blur(14px);padding:10px}
+.prof-panel .prof-head{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:4px 10px 8px}
+.prof-panel .prof-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 10px;border:0;border-radius:12px;background:transparent;color:var(--text);cursor:pointer;font:inherit;transition:background .15s ease}
+.prof-panel .prof-row:hover{background:var(--glass)}
+.prof-panel .prof-row.current{background:var(--soft)}
+.prof-panel .prof-row img,.prof-panel .prof-row .p-ava{width:32px;height:32px;border-radius:50%;flex:0 0 32px;object-fit:cover}
+.prof-panel .prof-row .p-ava{display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--card),var(--card2));color:var(--text);font-weight:700}
+.prof-panel .prof-row .p-bd{min-width:0;flex:1}
+.prof-panel .prof-row .p-nick{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prof-panel .prof-row .p-sub{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prof-panel .prof-row .p-badge{margin-left:auto;font-size:10px;color:var(--muted);border:1px solid var(--line);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.prof-panel .prof-foot{padding:8px 10px 2px;border-top:1px solid var(--line);margin-top:6px}
+.prof-panel .prof-foot a{color:var(--muted);font-size:12px;text-decoration:none}
+.prof-panel .prof-foot a:hover{color:var(--text)}
 .tools{display:flex;align-items:center;gap:9px}
 .btn{height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text);font-family:var(--font-sans);font-size:13px;cursor:pointer;backdrop-filter:blur(10px);transition:transform .16s ease,border-color .2s ease,background .2s ease}
 .btn:hover{transform:translateY(-1px);border-color:var(--accent)}
@@ -104,8 +118,10 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 /* ===== 表单 ===== */
 .field{margin-bottom:12px}
 .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600}
-.field input[type=text],.field textarea{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s ease,box-shadow .2s ease}
-.field input:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--soft)}
+.field input[type=text],.field textarea,.field select{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s ease,box-shadow .2s ease}
+.field select{appearance:none;-webkit-appearance:none;cursor:pointer;background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:34px}
+.field select option{background:#1a1a1c;color:var(--text)}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--soft)}
 .field textarea{min-height:104px;resize:vertical;font-family:ui-monospace,Consolas,monospace;font-size:12px}
 .field .hint{font-size:11px;color:var(--dim);margin-top:5px;line-height:1.6}
 .path-row{display:flex;gap:8px}
@@ -161,7 +177,12 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 <div class="page">
   <header class="header" id="topbar">
     <div class="brand">
-      <div class="logo"><span class="logo-txt">忆</span><img id="logoImg" alt="" referrerpolicy="no-referrer"></div>
+      <div class="logo" id="logoSw" title="切换账号"><span class="logo-txt">忆</span><img id="logoImg" alt="" referrerpolicy="no-referrer"></div>
+      <div class="prof-panel" id="profPanel" hidden>
+        <div class="prof-head">切换账号</div>
+        <div id="profList"></div>
+        <div class="prof-foot"><a href="/" rel="noopener">◀ 去档案页</a></div>
+      </div>
       <div class="brand-txt">
         <h1 id="brandName">Q忆</h1>
         <p id="brandSub">CONTROL PANEL</p>
@@ -229,9 +250,9 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
     <div class="btns">
       <button class="btn primary" id="btnStart">开始采集</button>
       <button class="btn danger" id="btnStop" disabled>停止</button>
-      <button class="btn" id="btnWeb">打开档案网页</button>
       <button class="btn danger" id="btnClear">清空数据</button>
       <button class="btn" id="btnLogs">查看日志</button>
+      <button class="btn danger" id="btnExit">退出程序</button>
     </div>
     <div class="hint" style="margin-top:12px">「开始采集」会从上次进度<b>续采</b>；点「清空数据」清空后，再开始采集才会<b>从头全部重采</b>。重启程序会自动读取已有数据恢复进度。</div>
   </section>
@@ -253,6 +274,14 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
       <div class="hint">浏览器 DevTools → 网络 → 任一 qzone 请求 → 复制 Cookie 头整段，或整条 curl 命令。</div>
       <div class="btns"><button class="btn primary" id="btnSaveCookie">保存 Cookie</button></div>
     </div>
+    <div class="field" style="margin-top:12px">
+      <label>用当前 Cookie 添加 / 采集目标 QQ</label>
+      <div class="path-row">
+        <input id="addTargetUin" type="text" placeholder="目标 QQ 号，如 10001">
+        <button class="btn primary" id="btnAddTarget" type="button">添加</button>
+      </div>
+      <div class="hint">用当前档案的 Cookie 为另一个 QQ 号创建独立档案并切换过去；正在采集的任务不受影响，继续后台运行。</div>
+    </div>
   </section>
 
   <section class="card">
@@ -268,25 +297,25 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
     <div class="field">
       <label>图片保存路径</label>
       <div class="path-row">
-        <input id="photosDir" type="text" placeholder="output/imgs">
+        <input id="photosDir" type="text" placeholder="imgs">
         <button class="btn" id="btnPhotosDir" type="button">选择</button>
       </div>
     </div>
     <div class="field">
       <label>视频保存路径</label>
       <div class="path-row">
-        <input id="videosDir" type="text" placeholder="output/videos">
+        <input id="videosDir" type="text" placeholder="videos">
         <button class="btn" id="btnVideosDir" type="button">选择</button>
       </div>
     </div>
     <div class="field">
       <label>帖子数据保存路径（JSON 数据）</label>
       <div class="path-row">
-        <input id="dataDir" type="text" placeholder="output/datas">
+        <input id="dataDir" type="text" placeholder="datas">
         <button class="btn" id="btnDataDir" type="button">选择</button>
       </div>
     </div>
-    <div class="hint" style="margin-bottom:12px">路径可留空使用默认值（相对于程序所在目录）；相对或绝对路径均可。</div>
+    <div class="hint" style="margin-bottom:12px">默认路径显示为相对程序目录的完整位置（如 output/账号名/imgs）。留空用默认；填写时写账号目录内的相对路径即可（如 imgs、media/photos）。</div>
     <div class="btns"><button class="btn primary" id="btnSaveSettings">保存设置</button></div>
   </section>
 </div>
@@ -294,6 +323,13 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 <script>
 const $ = id => document.getElementById(id);
 let lastStatus = '';
+let curProfile = '';
+
+function qurl(path){
+  // 所有档案相关请求都带上当前档案 id，保证请求落到对的应用户数据
+  if (curProfile) return path + (path.indexOf('?') >= 0 ? '&' : '?') + 'profile=' + encodeURIComponent(curProfile);
+  return path;
+}
 
 let bannerTimer = null;
 function banner(type, text, duration){
@@ -338,7 +374,7 @@ function paintTag(status){
 
 async function refreshStatus(){
   try{
-    const s = await fetch('/api/jobs/status').then(r => r.json());
+    const s = await fetch(qurl('/api/jobs/status')).then(r => r.json());
     $('stStatus').textContent = STATUS_META[s.status] || s.status;
     $('stPhase').textContent = s.phase || '';
     $('stPage').textContent = s.page || 0;
@@ -355,13 +391,13 @@ async function refreshStatus(){
     $('btnStop').disabled = !(s.status==='running' || s.status==='requesting' || s.status==='stopping');
     paintTag(s.status);
     if (s.status === 'blocked' && lastStatus !== 'blocked'){
-      alertBox('疑似风控', '⚠ 请求被拦截：' + (s.error || 'WAF 拦截') + '\n\n请更换 Cookie 或稍后再试。\n详细日志见程序目录 output/datas/crawl.log');
+      alertBox('疑似风控', '⚠ 请求被拦截：' + (s.error || 'WAF 拦截') + '\n\n请更换 Cookie 或稍后再试。\n详细日志见当前档案 datas/crawl.log');
     }
     if (s.status === 'failed' && lastStatus !== 'failed'){
-      alertBox('采集出错', '✕ ' + (s.error || '未知错误') + '\n\n详细日志见程序目录 output/datas/crawl.log');
+      alertBox('采集出错', '✕ ' + (s.error || '未知错误') + '\n\n详细日志见当前档案 datas/crawl.log');
     }
     if (s.status === 'completed' && (lastStatus === 'running' || lastStatus === 'requesting')){
-      alertBox('采集完成', '✓ 采集完成，共写入 ' + (s.written||0) + ' 条。\n\n这是正常抓完（不是被封），可以打开档案查看。\n数据已写入程序目录 output/datas/ 下，媒体在 output/imgs、output/videos。');
+      alertBox('采集完成', '✓ 采集完成，共写入 ' + (s.written||0) + ' 条。\n\n这是正常抓完（不是被封），可以打开档案查看。\n数据已写入当前档案 datas/ 下，媒体在 imgs、videos。');
     }
     lastStatus = s.status;
   }catch(e){}
@@ -369,7 +405,7 @@ async function refreshStatus(){
 
 async function refreshConfig(){
   try{
-    const c = await fetch('/api/config/status').then(r => r.json());
+    const c = await fetch(qurl('/api/config/status')).then(r => r.json());
     const bn = $('brandName'), bs = $('brandSub'), li = $('logoImg');
     if (c.ok && c.uin){
       if (c.nickname) bn.textContent = c.nickname;
@@ -377,33 +413,116 @@ async function refreshConfig(){
       if (c.avatar) li.src = c.avatar;
     }
     if (!c.ok){ $('cookieInfo').textContent = '未配置 Cookie：' + (c.error||''); return; }
-    $('cookieInfo').textContent = '已配置 · QQ ' + c.uin + ' · g_tk ' + c.g_tk + ' · ' + c.source;
+    $('cookieInfo').textContent = '已配置 · 目标 QQ ' + c.target_uin + ' · 登录 QQ ' + c.auth_uin + ' · g_tk ' + c.g_tk + ' · ' + c.source;
     $('targetUin').value = c.target_uin || '';
-    $('photosDir').value = c.photos_dir || 'output/imgs';
-    $('videosDir').value = c.videos_dir || 'output/videos';
-    $('dataDir').value = c.data_dir || 'output/datas';
+    $('photosDir').value = c.photos_dir || 'imgs';
+    $('videosDir').value = c.videos_dir || 'videos';
+    $('dataDir').value = c.data_dir || 'datas';
     $('dlPhotos').checked = !!c.download_photos;
     $('dlVideos').checked = !!c.download_videos;
   }catch(e){}
 }
 
+async function refreshProfiles(){
+  try{
+    const r = await fetch('/api/profiles').then(x => x.json());
+    if (!curProfile && r.current) curProfile = r.current;
+  }catch(e){}
+}
+
+/* ---- 点击头像切换账号 ---- */
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+var _profPanel = document.getElementById('profPanel');
+var _profList = document.getElementById('profList');
+var _profShown = false;
+function _profStatus(p){
+  var st = p.status;
+  if (!st || st === 'idle') return '';
+  return st === 'running' ? '采集中' : st;
+}
+function toggleProfPanel(){
+  _profShown = !_profShown;
+  _profPanel.hidden = !_profShown;
+  if (_profShown) loadProfiles();
+}
+function loadProfiles(){
+  fetch('/api/profiles').then(function(r){ return r.json(); }).then(function(d){
+    var rows = d.profiles || [];
+    if (!curProfile && d.current) curProfile = d.current;
+    var html = '';
+    rows.forEach(function(p){
+      var isCur = p.id === curProfile;
+      var ava = p.uin ? 'https://q1.qlogo.cn/g?b=qq&nk=' + p.uin + '&s=100' : '';
+      var face = ava ? '<img src="' + ava + '" alt="" referrerpolicy="no-referrer">'
+                     : '<span class="p-ava">' + esc((p.nickname || '?').charAt(0)) + '</span>';
+      var auth = (p.auth_uin && p.auth_uin !== p.uin) ? ' · 登录' + p.auth_uin : '';
+      var st = isCur ? '当前' : _profStatus(p);
+      html += '<button class="prof-row' + (isCur ? ' current' : '') + '" data-id="' + esc(p.id) + '">' + face
+        + '<span class="p-bd"><span class="p-nick">' + esc(p.nickname || '未命名') + '</span>'
+        + '<span class="p-sub">QQ ' + esc(p.uin || '') + auth + '</span></span>'
+        + (st ? '<span class="p-badge">' + esc(st) + '</span>' : '') + '</button>';
+    });
+    _profList.innerHTML = html || '<div class="prof-row"><span class="p-sub">暂无账号档案，请先扫码或粘贴 Cookie</span></div>';
+    Array.prototype.forEach.call(_profList.querySelectorAll('.prof-row[data-id]'), function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-id');
+        if (id === curProfile){ _profPanel.hidden = true; _profShown = false; return; }
+        fetch('/api/profiles/select', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({profile: id})
+        }).then(function(r){ return r.json(); }).then(function(j){
+          _profPanel.hidden = true; _profShown = false;
+          if (j.ok){
+            curProfile = j.profile;
+            banner('done', '✓ 已切换到档案');
+            refreshStatus(); refreshConfig(); refreshProfiles();
+          } else {
+            banner('blocked', '✕ ' + (j.error || '切换失败'));
+          }
+        }).catch(function(){ banner('blocked', '✕ 切换失败'); });
+      });
+    });
+  }).catch(function(){});
+}
+var _logoSw = document.getElementById('logoSw');
+if (_logoSw) _logoSw.addEventListener('click', function(e){ e.stopPropagation(); toggleProfPanel(); });
+document.addEventListener('click', function(e){
+  if (_profShown && !_profPanel.contains(e.target)){ _profPanel.hidden = true; _profShown = false; }
+});
+
+$('btnAddTarget').onclick = async () => {
+  const uin = $('addTargetUin').value.trim();
+  if (!uin){ banner('blocked', '请输入目标 QQ 号'); return; }
+  banner('info', '正在识别目标昵称并创建档案…', 8000);
+  const r = await fetch('/api/profiles/target', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({target_uin:uin})}).then(x => x.json());
+  if (r.ok){
+    curProfile = r.profile;
+    $('addTargetUin').value = '';
+    banner('done', '✓ 已添加档案：' + (r.nickname || '') + '（' + r.uin + '）');
+    refreshStatus(); refreshConfig(); refreshProfiles();
+  }else{
+    banner('blocked', '✕ ' + (r.error || '添加失败'));
+  }
+};
+
 $('btnLogs').onclick = async () => {
   $('logModal').style.display = 'flex';
   $('logView').textContent = '加载中…';
   try{
-    const r = await fetch('/api/logs').then(x => x.json());
+    const r = await fetch(qurl('/api/logs')).then(x => x.json());
     $('logView').textContent = r.text || '（暂无日志）';
   }catch(e){ $('logView').textContent = '读取日志失败'; }
   $('logView').scrollTop = $('logView').scrollHeight;
 };
 $('logClose').onclick = () => $('logModal').style.display = 'none';
-$('btnStart').onclick = () => fetch('/api/jobs/start',{method:'POST'}).then(()=>setTimeout(refreshStatus,300));
+$('btnStart').onclick = () => fetch(qurl('/api/jobs/start'),{method:'POST'}).then(()=>setTimeout(refreshStatus,300));
 $('btnStop').onclick = () => {
   banner('info', '正在停止…', 1000);
-  fetch('/api/jobs/stop',{method:'POST'}).then(()=>setTimeout(refreshStatus,300));
+  fetch(qurl('/api/jobs/stop'),{method:'POST'}).then(()=>setTimeout(refreshStatus,300));
 };
-$('btnClear').onclick = () => confirmBox('清空数据', '将删除全部采集数据（帖子、进度状态、媒体文件），且不可恢复。\n\n确认后再点「开始采集」，才会从头全部重新采集。', async () => {
-  const r = await fetch('/api/data/clear',{method:'POST'}).then(x=>x.json());
+$('btnClear').onclick = () => confirmBox('清空数据', '将删除当前档案的全部采集数据（帖子、进度状态、媒体文件），且不可恢复。\n\n确认后再点「开始采集」，才会从头全部重新采集。', async () => {
+  const r = await fetch(qurl('/api/data/clear'),{method:'POST'}).then(x=>x.json());
   if (r.ok){
     banner('done', '✓ 已清空：' + (r.files||[]).concat(r.dirs||[]).join('、'));
     setTimeout(refreshStatus, 300);
@@ -411,7 +530,12 @@ $('btnClear').onclick = () => confirmBox('清空数据', '将删除全部采集�
     banner('blocked', '✕ 清空失败：' + (r.error||''));
   }
 });
-$('btnWeb').onclick = () => { location.href = '/'; };
+$('btnExit').onclick = () => confirmBox('退出程序', '退出后程序停止运行（正在采集的任务会中断），需要时再双击启动。', () => {
+  try{ navigator.sendBeacon('/api/shutdown'); }catch(e){ try{ fetch('/api/shutdown', {method:'POST', keepalive:true}); }catch(_){} }
+  try{ window.open('', '_self'); }catch(e){}
+  try{ window.close(); }catch(e){}
+  banner('done', '✓ 程序已退出，可手动关闭本页', 5000);
+});
 function saveSettings(){
   const body = {
     target_uin: $('targetUin').value.trim(),
@@ -421,7 +545,7 @@ function saveSettings(){
     download_photos: $('dlPhotos').checked,
     download_videos: $('dlVideos').checked,
   };
-  return fetch('/api/config/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+  return fetch(qurl('/api/config/settings'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
 }
 $('btnSaveSettings').onclick = async () => {
   const r = await saveSettings();
@@ -433,9 +557,14 @@ $('btnSaveCookie').onclick = async () => {
   const text = $('cookieText').value.trim();
   if (!text){ banner('blocked','请粘贴 Cookie'); return; }
   const r = await fetch('/api/config/cookie',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text, target_uin: $('targetUin').value.trim()})}).then(x=>x.json());
-  if (r.ok){ banner('done','✓ Cookie 已保存 · QQ ' + r.uin); $('manualBox').style.display='none'; }
+  if (r.ok){
+    if (r.profile) curProfile = r.profile;
+    banner('done','✓ Cookie 已保存 · 目标 QQ ' + (r.uin||''));
+    $('manualBox').style.display='none';
+  }
   else banner('blocked','✕ ' + (r.error||'保存失败'));
   refreshConfig();
+  refreshProfiles();
 };
 /* ---- 手机扫码登录 ---- */
 let qrTimer = null, qrRefreshTimer = null, qrId = null;
@@ -462,7 +591,8 @@ async function qrFetch(){
 async function qrPoll(){
   if (!qrId) return;
   try{
-    const r = await fetch('/api/cookie/qr/' + qrId).then(x => x.json());
+    const tgt = encodeURIComponent($('targetUin').value.trim());
+    const r = await fetch('/api/cookie/qr/' + qrId + (tgt ? '?target_uin=' + tgt : '')).then(x => x.json());
     if (r.state === 'waiting'){ $('qrStatus').textContent = '等待扫码…'; }
     else if (r.state === 'scanned'){ $('qrStatus').textContent = '已扫码，请在手机上确认登录'; }
     else if (r.state === 'expired'){
@@ -473,8 +603,10 @@ async function qrPoll(){
     else if (r.state === 'ok'){
       clearInterval(qrTimer); qrTimer = null; qrId = null;
       $('qrStatus').textContent = '✓ 登录成功';
+      if (r.profile) curProfile = r.profile;
       banner('done', '✓ 已获取 QQ ' + r.uin + ' 的 Cookie');
       refreshConfig();
+      refreshProfiles();
       setTimeout(qrHide, 900);
     }else{
       clearInterval(qrTimer); qrTimer = null; qrId = null;
@@ -533,8 +665,9 @@ document.getElementById('themeBtn').addEventListener('click',toggleTheme);
 })();
 
 document.body.classList.add('loaded');
-refreshStatus(); refreshConfig();
+refreshStatus(); refreshConfig(); refreshProfiles();
 setInterval(refreshStatus, 1500);
+setInterval(refreshProfiles, 5000);
 </script>
 </body>
 </html>

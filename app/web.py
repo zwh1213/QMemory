@@ -1,7 +1,7 @@
 import sys
 import time
-from datetime import datetime
 from pathlib import Path
+
 from flask import Flask, jsonify, request, send_file
 
 from app import cookiemgr
@@ -9,41 +9,76 @@ from app.qlogin import QrLogin
 from app.qzone_spider import avatar_url, fetch_nickname
 
 
-def _int_arg(name, default, minimum, maximum):
-    try:
-        value = int(request.args.get(name, default))
-    except (TypeError, ValueError):
-        value = default
-    return max(minimum, min(maximum, value))
-
-
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = BASE_DIR / "templates" if (BASE_DIR / "templates").is_dir() else BASE_DIR.parent / "templates"
 
 
-def create_app(repository, engine):
+def _inside(base, path):
+    try:
+        path.resolve().relative_to(base.resolve())
+        return True
+    except ValueError:
+        return False
+
+
+APP_ROOT = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else BASE_DIR.parent
+
+
+def _full_rel(root, value):
+    # 显示用：相对程序目录的完整相对路径，如 output/昵称_QQ/imgs
+    try:
+        return str((root.relative_to(APP_ROOT) / value).as_posix())
+    except ValueError:
+        return str(value)
+
+
+def _strip_root(root, value):
+    # 保存用：把表单里的完整相对路径剥回档案目录内的相对值
+    try:
+        prefix = str(root.relative_to(APP_ROOT).as_posix())
+    except ValueError:
+        return str(value)
+    if value == prefix:
+        return "."
+    if value.startswith(prefix + "/"):
+        return value[len(prefix) + 1:]
+    return str(value)
+
+
+def create_app(manager):
     app = Flask(__name__)
-    qr_login = QrLogin(engine.root)
+    qr_login = QrLogin(manager.root)
+    app.last_beat = {"t": time.monotonic()}
 
-    @app.get("/api/cookie/qr")
-    def cookie_qr():
+    def ctx(profile=None):
         try:
-            info = qr_login.create()
+            return manager.context(profile)
         except ValueError as exc:
-            return jsonify(ok=False, error=str(exc)), 502
-        return jsonify(ok=True, qr_id=info["qr_id"], image=info["image"])
+            return None, (jsonify(error=str(exc)), 404)
 
-    @app.get("/api/cookie/qr/<qr_id>")
-    def cookie_qr_poll(qr_id):
-        return jsonify(qr_login.poll(qr_id))
+    def profile_from_request():
+        return request.args.get("profile") or (request.get_json(silent=True) or {}).get("profile") or None
+
+    def active_ctx():
+        result = ctx(profile_from_request())
+        return result if isinstance(result, tuple) else (result, None)
+
+    def status_payload(context):
+        data = context["engine"].status()
+        data["profile_id"] = context["id"]
+        data["running_profiles"] = manager.running_profiles()
+        return data
 
     @app.get("/")
     def index():
         return send_file(TEMPLATES_DIR / "viewer.html")
 
+    @app.get("/console")
+    def console():
+        return send_file(TEMPLATES_DIR / "console.html")
+
     @app.get("/favicon.ico")
     def favicon():
-        # exe 内置图标优先，源码运行用项目根 imgs
         cands = []
         if getattr(sys, "frozen", False):
             cands.append(Path(sys._MEIPASS) / "imgs" / "icon.ico")
@@ -53,195 +88,224 @@ def create_app(repository, engine):
                 return send_file(p, mimetype="image/x-icon")
         return "", 404
 
-    @app.get("/console")
-    def console():
-        return send_file(TEMPLATES_DIR / "console.html")
+    @app.post("/api/heartbeat")
+    def heartbeat():
+        app.last_beat["t"] = time.monotonic()
+        return jsonify(ok=True)
 
-    @app.get("/videos/<path:name>")
-    def video(name):
-        path = Path(engine.root) / "videos" / name
-        if not path.exists() or path.is_dir():
-            return jsonify(error="视频不存在"), 404
-        return send_file(path, conditional=True)
+    @app.post("/api/shutdown")
+    def shutdown():
+        # 控制台「退出程序」：主循环检测到标志后干净退出
+        app.should_stop = True
+        return jsonify(ok=True)
 
-    @app.get("/media/<kind>/<path:name>")
-    def media(kind, name):
-        if kind not in {"photos", "videos", "avatars"}:
-            return jsonify(error="类型无效"), 400
+    @app.get("/api/profiles")
+    def profiles():
+        return jsonify(ok=True, current=manager.profiles.active_name(), profiles=manager.list_profiles(),
+                       migration_error=manager.profiles.migration_error)
+
+    @app.post("/api/profiles/select")
+    def select_profile():
+        payload = request.get_json(silent=True) or {}
         try:
-            cfg = cookiemgr.load(engine.root)
-        except ValueError:
-            cfg = {}
-        if kind == "videos":
-            base = Path(engine.root) / (cfg.get("videos_dir") or "output/videos")
-        else:
-            base = Path(engine.root) / (cfg.get("photos_dir") or "output/imgs")
-            if kind == "avatars":
-                base = base / "avatars"
-        path = base / name
-        if not path.exists() or path.is_dir():
-            return jsonify(error="文件不存在"), 404
-        return send_file(path, conditional=True)
+            context = manager.select(payload.get("profile", ""))
+        except ValueError as exc:
+            return jsonify(error=str(exc)), 404
+        return jsonify(ok=True, profile=context["id"], status=status_payload(context))
 
     @app.get("/api/data")
     def data():
+        context, error = active_ctx()
+        if error:
+            return error
+        repository = context["repository"]
         repository.reload()
         dataset_id, posts = repository.snapshot()
-        cfg = cookiemgr.load(engine.root)
-        my_uin = str(cfg.get("uin") or "")
-        # 档案主人优先取采集目标 QQ 号，其次登录者；昵称从配置或采集数据兜底
-        me_uin = str(cfg.get("target_uin") or my_uin)
-        avatar = avatar_url(me_uin) if me_uin else ""
-        nickname = fetch_nickname(cfg, me_uin)
-        me = {"uin": me_uin, "nickname": nickname or me_uin, "avatar": avatar}
-        if not nickname:
-            # 兜底：从采集数据里找该 uin 的作者昵称/头像
-            fallback = ""
-            for post in posts:
-                author = post.get("author") or {}
-                anick = author.get("nickname") or ""
-                if anick:
-                    if not fallback:
-                        fallback = anick
-                    if str(author.get("uin") or "") == me_uin:
-                        me["nickname"] = anick
-                        if author.get("avatar"):
-                            me["avatar"] = author["avatar"]
-                        break
-            else:
-                if fallback:
-                    me["nickname"] = fallback
-        return jsonify({"generated": repository.generated, "count": len(posts),
-                        "posts": posts, "me": me, "dataset_id": dataset_id})
-
-    @app.get("/api/posts")
-    def posts():
-        page = _int_arg("page", 1, 1, 1000000)
-        page_size = _int_arg("page_size", 50, 1, 50)
-        year = request.args.get("year") or None
-        month = request.args.get("month") or None
-        for value, low, high in ((year, 1, 9999), (month, 1, 12)):
-            if value is not None:
-                try:
-                    if not low <= int(value) <= high:
-                        return jsonify(error="日期参数无效"), 400
-                except ValueError:
-                    return jsonify(error="日期参数无效"), 400
-        start_date = request.args.get("start_date", "")
-        end_date = request.args.get("end_date", "")
-        for value in (start_date, end_date):
-            if value:
-                try:
-                    datetime.strptime(value, "%Y-%m-%d")
-                except ValueError:
-                    return jsonify(error="日期格式应为 YYYY-MM-DD"), 400
-        if start_date and end_date and start_date > end_date:
-            return jsonify(error="开始日期不能晚于结束日期"), 400
-        owner = request.args.get("owner", "all")
-        if owner not in {"all", "mine", "other"}:
-            return jsonify(error="owner 参数无效"), 400
-        sort = request.args.get("sort", "new")
-        if sort not in {"new", "old"}:
-            return jsonify(error="sort 参数无效"), 400
-        result = repository.query(
-            page=page, page_size=page_size, query=request.args.get("query", ""),
-            owner=owner, album=request.args.get("album") == "1",
-            year=year, month=month, start_date=start_date, end_date=end_date,
-            sort=sort, snapshot=request.args.get("snapshot", ""),
-        )
-        if result is None:
-            return jsonify(error="数据已更新，请重新加载", code="DATASET_CHANGED"), 409
-        return jsonify(result)
+        cfg = cookiemgr.load(context["root"])
+        me_uin = str(cfg.get("target_uin") or cfg.get("uin") or "")
+        nickname = fetch_nickname(cfg, me_uin) or cfg.get("nickname") or me_uin
+        return jsonify(generated=repository.generated, count=len(posts), posts=posts,
+                       me={"uin": me_uin, "nickname": nickname, "avatar": avatar_url(me_uin) if me_uin else ""},
+                       dataset_id=dataset_id, profile_id=context["id"])
 
     @app.get("/api/archive")
     def archive():
-        return jsonify(repository.archive())
-
-    # 心跳：控制台页面每 1.5s 轮询 /api/jobs/status，作为"页面还开着"的信号
-    last_beat = {"t": time.time()}
+        context, error = active_ctx()
+        if error:
+            return error
+        return jsonify(context["repository"].archive())
 
     @app.get("/api/jobs/status")
     def job_status():
-        last_beat["t"] = time.time()
-        return jsonify(engine.status())
+        app.last_beat["t"] = time.monotonic()
+        context, error = active_ctx()
+        if error:
+            return error
+        return jsonify(status_payload(context))
 
     @app.get("/api/logs")
-    def get_logs():
-        # 返回 crawl.log 完整内容（日志弹窗用），文件不存在时返回空
+    def logs():
+        context, error = active_ctx()
+        if error:
+            return error
         try:
-            text = engine.log_path.read_text(encoding="utf-8")
+            text = context["engine"].log_path.read_text(encoding="utf-8")
         except OSError:
             text = ""
         return jsonify(ok=True, text=text)
 
     @app.post("/api/jobs/start")
     def start():
-        return jsonify(started=engine.start(), status=engine.status())
+        context, error = active_ctx()
+        if error:
+            return error
+        return jsonify(started=context["engine"].start(), status=status_payload(context))
 
     @app.post("/api/jobs/stop")
     def stop():
-        return jsonify(stopped=engine.stop(), status=engine.status())
+        context, error = active_ctx()
+        if error:
+            return error
+        return jsonify(stopped=context["engine"].stop(), status=status_payload(context))
 
     @app.post("/api/data/clear")
-    def data_clear():
-        return jsonify(engine.clear_data())
+    def clear_data():
+        context, error = active_ctx()
+        if error:
+            return error
+        return jsonify(context["engine"].clear_data())
+
+    @app.post("/api/profiles/target")
+    def profiles_target():
+        # 用当前档案的 Cookie 为目标 QQ 创建/激活独立档案
+        context, error = active_ctx()
+        if error:
+            return error
+        payload = request.get_json(silent=True) or {}
+        target_uin = str(payload.get("target_uin") or "").strip()
+        if not target_uin.isdigit():
+            return jsonify(error="目标 QQ 号无效"), 400
+        cfg = cookiemgr.load(context["root"])
+        if not cfg.get("cookies"):
+            return jsonify(error="当前档案未配置 Cookie，请先登录或粘贴"), 400
+        nickname = fetch_nickname(cfg, target_uin) or f"QQ_{target_uin}"
+        new_ctx = manager.create_or_update(target_uin, nickname, activate=True)
+        if new_ctx["engine"].is_alive():
+            return jsonify(error="该账号正在采集，不能替换 Cookie"), 409
+        new_cfg = cookiemgr.load(new_ctx["root"])
+        new_cfg.update({"cookies": cfg.get("cookies"), "uin": cfg.get("uin"),
+                        "auth_uin": cfg.get("auth_uin") or cfg.get("uin", ""),
+                        "g_tk": cfg.get("g_tk"), "user_agent": cfg.get("user_agent"),
+                        "referer": cfg.get("referer"), "source": "inherit",
+                        "target_uin": target_uin, "nickname": nickname})
+        cookiemgr.save(new_ctx["root"], new_cfg)
+        new_ctx["repository"].reload()
+        return jsonify(ok=True, profile=new_ctx["id"], nickname=nickname,
+                       uin=target_uin, avatar=avatar_url(target_uin))
+
+    def save_conf(conf, nickname, target_uin, source):
+        target_uin = str(target_uin or conf["uin"]).strip()
+        if not target_uin.isdigit():
+            raise ValueError("目标 QQ 号无效")
+        if str(target_uin) != str(conf["uin"]):
+            # 目标是别的号：用目标资料识别昵称，别把登录号昵称串过去
+            probe = {**conf, "auth_uin": str(conf["uin"])}
+            nickname = fetch_nickname(probe, target_uin) or ""
+        context = manager.create_or_update(target_uin, nickname or f"QQ_{target_uin}", activate=True)
+        if context["engine"].is_alive():
+            raise ValueError("该账号正在采集，不能替换 Cookie")
+        cfg = cookiemgr.load(context["root"])
+        cfg.update({"cookies": conf["cookies"], "uin": conf["uin"], "auth_uin": conf["uin"],
+                    "g_tk": conf["g_tk"], "user_agent": conf["user_agent"], "referer": conf["referer"],
+                    "source": source, "target_uin": target_uin})
+        if nickname:
+            cfg["nickname"] = nickname
+        cookiemgr.save(context["root"], cfg)
+        context["repository"].reload()
+        return context
 
     @app.post("/api/config/cookie")
-    def update_cookie():
+    def cookie():
         payload = request.get_json(silent=True) or {}
-        text = str(payload.get("text", "")).strip()
-        target_uin = str(payload.get("target_uin", "")).strip()
         try:
-            conf = cookiemgr.apply_cookie(engine.root, text, target_uin)
+            conf = cookiemgr.parse_cookie_text(str(payload.get("text", "")))
+            context = save_conf(conf, "", payload.get("target_uin", ""), "manual")
         except ValueError as exc:
             return jsonify(error=str(exc)), 400
-        return jsonify(ok=True, uin=conf["uin"], g_tk=conf["g_tk"])
+        return jsonify(ok=True, uin=conf["uin"], g_tk=conf["g_tk"], profile=context["id"])
+
+    @app.get("/api/cookie/qr")
+    def cookie_qr():
+        try:
+            info = qr_login.create()
+            return jsonify(ok=True, qr_id=info["qr_id"], image=info["image"])
+        except ValueError as exc:
+            return jsonify(ok=False, error=str(exc)), 502
+
+    @app.get("/api/cookie/qr/<qr_id>")
+    def cookie_qr_poll(qr_id):
+        result = qr_login.poll(qr_id)
+        if result.get("state") != "ok":
+            return jsonify(result)
+        try:
+            context = save_conf(result.pop("conf"), result.get("nickname", ""), request.args.get("target_uin", ""), "qr")
+            result["profile"] = context["id"]
+        except ValueError as exc:
+            return jsonify(state="error", error=str(exc))
+        return jsonify(result)
 
     @app.get("/api/config/status")
     def config_status():
-        try:
-            cfg = cookiemgr.load(engine.root)
-        except ValueError as exc:
-            return jsonify(ok=False, error=str(exc))
-        if not cfg.get("uin"):
-            return jsonify(ok=False, error="未配置 Cookie，请先自动获取或手动粘贴",
-                           uin="", g_tk=0,
-                           photos_dir=cfg.get("photos_dir") or "output/imgs",
-                           videos_dir=cfg.get("videos_dir") or "output/videos",
-                           data_dir=cfg.get("data_dir") or "output/datas",
-                           target_uin="",
-                           download_photos=bool(cfg.get("download_photos", True)),
-                           download_videos=bool(cfg.get("download_videos", True)),
-                           source=cfg.get("source", ""))
-        me_uin = str(cfg.get("target_uin") or cfg["uin"])
-        return jsonify(ok=True, uin=cfg["uin"], g_tk=cfg["g_tk"],
-                       nickname=fetch_nickname(cfg, me_uin) or me_uin,
-                       avatar=avatar_url(me_uin) if me_uin else "",
-                       photos_dir=cfg.get("photos_dir") or "output/imgs",
-                       videos_dir=cfg.get("videos_dir") or "output/videos",
-                       data_dir=cfg.get("data_dir") or "output/datas",
-                       target_uin=cfg.get("target_uin") or cfg["uin"],
+        context, error = active_ctx()
+        if error:
+            return error
+        cfg = cookiemgr.load(context["root"])
+        target = str(cfg.get("target_uin") or cfg.get("uin") or "")
+        return jsonify(ok=bool(cfg.get("uin")), uin=cfg.get("uin", ""), auth_uin=cfg.get("auth_uin") or cfg.get("uin", ""),
+                       g_tk=cfg.get("g_tk", 0), target_uin=target, nickname=cfg.get("nickname") or target,
+                       avatar=avatar_url(target) if target else "",
+                       photos_dir=_full_rel(context["root"], cfg.get("photos_dir") or "imgs"),
+                       videos_dir=_full_rel(context["root"], cfg.get("videos_dir") or "videos"),
+                       data_dir=_full_rel(context["root"], cfg.get("data_dir") or "datas"),
                        download_photos=bool(cfg.get("download_photos", True)),
-                       download_videos=bool(cfg.get("download_videos", True)),
-                       source=cfg.get("source", ""))
+                       download_videos=bool(cfg.get("download_videos", True)), source=cfg.get("source", ""),
+                       profile_id=context["id"])
 
     @app.post("/api/config/settings")
-    def update_settings():
+    def settings():
+        context, error = active_ctx()
+        if error:
+            return error
+        if context["engine"].is_alive():
+            return jsonify(error="采集进行中，停止后再修改设置"), 409
         payload = request.get_json(silent=True) or {}
-        cfg = cookiemgr.load(engine.root)
+        cfg = cookiemgr.load(context["root"])
         for key in ("photos_dir", "videos_dir", "data_dir"):
-            if key in payload and str(payload.get(key, "")).strip():
-                cfg[key] = str(payload[key]).strip()
-        if "download_photos" in payload:
-            cfg["download_photos"] = bool(payload["download_photos"])
-        if "download_videos" in payload:
-            cfg["download_videos"] = bool(payload["download_videos"])
-        if "target_uin" in payload and str(payload.get("target_uin", "")).strip():
-            cfg["target_uin"] = str(payload["target_uin"]).strip()
-        cookiemgr.save(engine.root, cfg)
+            if key in payload and str(payload[key]).strip():
+                value = str(payload[key]).strip()
+                if Path(value).is_absolute() or ".." in Path(value).parts:
+                    return jsonify(error="保存路径必须在当前账号目录内"), 400
+                cfg[key] = _strip_root(context["root"], value)
+        for key in ("download_photos", "download_videos"):
+            if key in payload:
+                cfg[key] = bool(payload[key])
+        cookiemgr.save(context["root"], cfg)
         return jsonify(ok=True)
 
-    # 心跳供 main 主循环判定"页面已关闭"，实现关 tab 自动退出
-    app.last_beat = last_beat
+    @app.get("/media/<kind>/<path:name>")
+    def media(kind, name):
+        context, error = active_ctx()
+        if error:
+            return error
+        if kind not in {"photos", "videos", "avatars"}:
+            return jsonify(error="类型无效"), 400
+        cfg = cookiemgr.load(context["root"])
+        base = context["root"] / (cfg.get("videos_dir") if kind == "videos" else cfg.get("photos_dir"))
+        if kind == "avatars":
+            base /= "avatars"
+        path = (base / name).resolve()
+        if not _inside(base, path) or not path.is_file():
+            return jsonify(error="文件不存在"), 404
+        return send_file(path, conditional=True)
 
     return app

@@ -1,5 +1,7 @@
+import atexit
 import logging
 import os
+import signal
 import socket
 import sys
 import threading
@@ -15,12 +17,41 @@ if getattr(sys, "frozen", False) and sys.stdout is None:
     sys.stdout = _null
     sys.stderr = _null
 
-from app.engine import CrawlEngine
-from app.repository import ArchiveRepository
+from app.account_manager import AccountManager
 from app.web import create_app
 
 
 BASE_DIR = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
+
+_PID_FILE = BASE_DIR / "qmemory.pid"
+
+
+def _kill_existing():
+    # 程序常驻不退，再次启动时顶掉上一次的旧实例
+    try:
+        old = int(_PID_FILE.read_text(encoding="utf-8").strip() or 0)
+    except (OSError, ValueError):
+        old = 0
+    if old and old != os.getpid():
+        try:
+            os.kill(old, signal.SIGTERM)
+        except OSError:
+            pass  # 旧进程已经没了
+        time.sleep(0.6)  # 给旧实例一点收尾时间
+    try:
+        _PID_FILE.write_text(str(os.getpid()), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def _cleanup_pid():
+    try:
+        _PID_FILE.unlink()
+    except OSError:
+        pass
+
+
+atexit.register(_cleanup_pid)
 
 
 def _free_port():
@@ -47,12 +78,12 @@ class _NoAccessLog(logging.Filter):
 
 
 def main():
+    _kill_existing()
     lg = logging.getLogger("werkzeug")
     lg.setLevel(logging.INFO)
     lg.addFilter(_NoAccessLog())
-    repository = ArchiveRepository(BASE_DIR)
-    engine = CrawlEngine(BASE_DIR, repository)
-    app = create_app(repository, engine)
+    manager = AccountManager(BASE_DIR)
+    app = create_app(manager)
     port = _free_port()
     base = f"http://127.0.0.1:{port}"
     threading.Thread(
@@ -62,19 +93,9 @@ def main():
     _wait_server(base)
     print(f"Q忆 已启动：{base}/console（档案：{base}/）")
     webbrowser.open(base + "/console")
-    # 关控制台 tab 后无心跳超 20s 且非采集中则退出
-    try:
-        while True:
-            time.sleep(5)
-            status = engine.status().get("status")
-            if status in ("running", "requesting", "stopping"):
-                continue
-            beat = getattr(app, "last_beat", None)
-            if beat and time.time() - beat["t"] > 20:
-                print("控制台页面已关闭，自动退出")
-                break
-    except KeyboardInterrupt:
-        pass
+    # 程序常驻：关页面不退出；再次启动程序会顶掉本实例；控制台点「退出程序」才退出
+    while not getattr(app, "should_stop", False):
+        time.sleep(1)
 
 
 if __name__ == "__main__":

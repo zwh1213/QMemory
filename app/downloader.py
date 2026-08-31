@@ -11,8 +11,8 @@ from app.qzone_spider import avatar_url, download, hd_photo_url
 
 def _dirs(root, cfg):
     root = Path(root)
-    return (root / (cfg.get("photos_dir") or "output/imgs"),
-            root / (cfg.get("videos_dir") or "output/videos"))
+    return (root / (cfg.get("photos_dir") or "imgs"),
+            root / (cfg.get("videos_dir") or "videos"))
 
 
 def _new_session(conf):
@@ -39,9 +39,9 @@ class MediaDownloader:
     # 采集线程入队，图片/视频各一个下载线程消费；映射与计数用锁保护
     def __init__(self, root, cfg, conf):
         self.root = Path(root)
-        self.data_dir = self.root / (cfg.get("data_dir") or "output/datas")
-        self.photos_dir = self.root / (cfg.get("photos_dir") or "output/imgs")
-        self.videos_dir = self.root / (cfg.get("videos_dir") or "output/videos")
+        self.data_dir = self.root / (cfg.get("data_dir") or "datas")
+        self.photos_dir = self.root / (cfg.get("photos_dir") or "imgs")
+        self.videos_dir = self.root / (cfg.get("videos_dir") or "videos")
         self.conf = conf
         self.img_session = _new_session(conf)
         self.vid_session = _new_session(conf)

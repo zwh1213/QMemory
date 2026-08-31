@@ -92,24 +92,21 @@ def parse_cookie_text(text):
 
 
 DEFAULTS = {
-    "cookies": {}, "uin": "", "g_tk": 0, "user_agent": DEFAULT_UA,
-    "referer": "", "photos_dir": "output/imgs", "videos_dir": "output/videos",
-    "data_dir": "output/datas", "download_photos": True, "download_videos": True,
-    "target_uin": "", "source": "curl.txt",
+    "cookies": {}, "uin": "", "auth_uin": "", "g_tk": 0, "user_agent": DEFAULT_UA,
+    "referer": "", "photos_dir": "imgs", "videos_dir": "videos",
+    "data_dir": "datas", "exports_dir": "exports",
+    "download_photos": True, "download_videos": True,
+    "target_uin": "", "source": "curl.txt", "nickname": "",
 }
 
 
 def config_path(root):
-    # config.json 随采集数据放 output/ 下（打包备份恢复一致）；旧版在根目录也兼容读
-    return Path(root) / "output" / "config.json"
+    return Path(root) / "config.json"
 
 
 def load(root):
+    root = Path(root)
     path = config_path(root)
-    if not path.exists():
-        legacy = Path(root) / "config.json"
-        if legacy.exists():
-            path = legacy
     if path.exists():
         try:
             cfg = json.loads(path.read_text(encoding="utf-8"))
@@ -117,19 +114,22 @@ def load(root):
                 return {**DEFAULTS, **cfg}
         except (OSError, ValueError):
             pass
-    curlf = Path(root) / "curl.txt"
+    curlf = root / "curl.txt"
     if not curlf.exists():
         return dict(DEFAULTS)
     conf = parse_curl(str(curlf))
     return {**DEFAULTS, "cookies": conf["cookies"], "uin": conf["uin"],
-            "g_tk": conf["g_tk"], "user_agent": conf["user_agent"],
-            "referer": conf["referer"], "target_uin": conf["uin"]}
+            "auth_uin": conf["uin"], "g_tk": conf["g_tk"],
+            "user_agent": conf["user_agent"], "referer": conf["referer"],
+            "target_uin": conf["uin"]}
 
 
 def save(root, cfg):
     path = config_path(root)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(path)
     return path
 
 
@@ -137,9 +137,9 @@ def apply_cookie(root, text, target_uin=""):
     conf = parse_cookie_text(text)
     cfg = load(root)
     cfg.update({
-        "cookies": conf["cookies"], "uin": conf["uin"], "g_tk": conf["g_tk"],
-        "user_agent": conf["user_agent"], "referer": conf["referer"],
-        "source": "manual",
+        "cookies": conf["cookies"], "uin": conf["uin"], "auth_uin": conf["uin"],
+        "g_tk": conf["g_tk"], "user_agent": conf["user_agent"],
+        "referer": conf["referer"], "source": "manual",
     })
     if target_uin:
         cfg["target_uin"] = str(target_uin).strip()

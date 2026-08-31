@@ -54,7 +54,7 @@ body.loaded .page{opacity:1;transform:none}
 /* ===== 顶栏 ===== */
 .header{position:sticky;top:10px;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:12px 14px;margin-bottom:22px;border-radius:14px;border:1px solid var(--line);background:color-mix(in srgb,var(--bg) 58%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:border-color .3s ease,box-shadow .3s ease}
 .header.scrolled{border-color:var(--line);box-shadow:var(--nav-shadow)}
-.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand{position:relative;display:flex;align-items:center;gap:12px;min-width:0}
 .logo{width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;overflow:hidden;position:relative;background:#fff;box-shadow:var(--nav-shadow);color:#111;font-family:var(--font-disp);font-size:22px;transition:transform .18s ease}
 .logo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
 .logo.has-avatar .logo-txt{display:none}
@@ -349,6 +349,21 @@ body.menu-open .menu-overlay,body.menu-open .menu-sheet{display:block}
   body.loaded .page,.f-item,.anim{opacity:1;transform:none;filter:none}
   .f-grid img{opacity:1}
 }
+#logoSw{cursor:pointer}
+.prof-panel{position:absolute;top:calc(100% + 10px);left:0;z-index:60;min-width:250px;max-width:330px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(160deg,color-mix(in srgb,var(--card) 94%,transparent),color-mix(in srgb,var(--card2) 96%,transparent));box-shadow:var(--shadow2);backdrop-filter:var(--glass);padding:10px}
+.prof-panel .prof-head{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:4px 10px 8px}
+.prof-panel .prof-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 10px;border:0;border-radius:12px;background:transparent;color:var(--text);cursor:pointer;font:inherit;transition:background .15s ease}
+.prof-panel .prof-row:hover{background:rgba(255,255,255,.08)}
+.prof-panel .prof-row.current{background:rgba(255,255,255,.12)}
+.prof-panel .prof-row img,.prof-panel .prof-row .p-ava{width:32px;height:32px;border-radius:50%;flex:0 0 32px;object-fit:cover}
+.prof-panel .prof-row .p-ava{display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--card),var(--card2));color:var(--text);font-weight:700}
+.prof-panel .prof-row .p-bd{min-width:0;flex:1}
+.prof-panel .prof-row .p-nick{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prof-panel .prof-row .p-sub{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prof-panel .prof-row .p-badge{margin-left:auto;font-size:10px;color:var(--muted);border:1px solid var(--line);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.prof-panel .prof-foot{padding:8px 10px 2px;border-top:1px solid var(--line);margin-top:6px}
+.prof-panel .prof-foot a{color:var(--muted);font-size:12px;text-decoration:none}
+.prof-panel .prof-foot a:hover{color:var(--text)}
 </style>
 </head>
 <body>
@@ -363,7 +378,12 @@ body.menu-open .menu-overlay,body.menu-open .menu-sheet{display:block}
 <div class="page">
   <header class="header" id="topbar">
     <div class="brand">
-      <div class="logo"><span class="logo-txt">忆</span><img id="logoImg" alt="" referrerpolicy="no-referrer"></div>
+      <div class="logo" id="logoSw" title="切换账号"><span class="logo-txt">忆</span><img id="logoImg" alt="" referrerpolicy="no-referrer"></div>
+      <div class="prof-panel" id="profPanel" hidden>
+        <div class="prof-head">切换账号</div>
+        <div id="profList"></div>
+        <div class="prof-foot"><a href="/console" target="_blank" rel="noopener">去控制台 ›</a></div>
+      </div>
       <div class="brand-txt">
         <h1 id="brandName">Q忆</h1>
         <p>MEMORY ARCHIVE</p>
@@ -563,10 +583,13 @@ document.getElementById('dNext').addEventListener('click',function(){dNav(1);});
   refresh();if(reduced)frame();else requestAnimationFrame(frame);
 })();
 var _search=document.getElementById('search');if(_search){var _t0;_search.addEventListener('input',function(){clearTimeout(_t0);_t0=setTimeout(function(){state.query=_search.value.trim();render();},250);});}
-var _lastDs='',_init=false;
+var _lastDs='',_profileId='',_init=false;
 function loadData(){
   return fetch('/api/data').then(function(r){return r.json();}).then(function(d){
-    var _chg=_lastDs!==(d.dataset_id||'');_lastDs=d.dataset_id||_lastDs;
+    var _chg=_lastDs!==(d.dataset_id||'')||_profileId!==(d.profile_id||'');
+    if(_chg)POSTS=[];
+    _lastDs=d.dataset_id||_lastDs;
+    _profileId=d.profile_id||_profileId;
     POSTS=d.posts||[];ME=d.me||{};
     if(!_init){
       _init=true;
@@ -584,6 +607,64 @@ function loadData(){
 }
 loadData();
 setInterval(loadData,5000);
+
+/* ---- 点击头像切换账号 ---- */
+var _profPanel = document.getElementById('profPanel');
+var _profList = document.getElementById('profList');
+var _profShown = false;
+function _profStatus(p){
+  var st = p.status;
+  if (!st || st === 'idle') return '';
+  return st === 'running' ? '采集中' : st;
+}
+function toggleProfPanel(){
+  _profShown = !_profShown;
+  _profPanel.hidden = !_profShown;
+  if (_profShown) loadProfiles();
+}
+function loadProfiles(){
+  fetch('/api/profiles').then(function(r){ return r.json(); }).then(function(d){
+    var rows = d.profiles || [];
+    var html = '';
+    rows.forEach(function(p){
+      var isCur = p.id === _profileId;
+      var ava = p.uin ? 'https://q1.qlogo.cn/g?b=qq&nk=' + p.uin + '&s=100' : '';
+      var face = ava ? '<img src="' + esc(ava) + '" alt="" referrerpolicy="no-referrer">'
+                     : '<span class="p-ava">' + esc((p.nickname || '?').charAt(0)) + '</span>';
+      var auth = (p.auth_uin && p.auth_uin !== p.uin) ? ' · 登录' + p.auth_uin : '';
+      var st = isCur ? '当前' : _profStatus(p);
+      html += '<button class="prof-row' + (isCur ? ' current' : '') + '" data-id="' + esc(p.id) + '">' + face
+        + '<span class="p-bd"><span class="p-nick">' + esc(p.nickname || '未命名') + '</span>'
+        + '<span class="p-sub">QQ ' + esc(p.uin || '') + auth + '</span></span>'
+        + (st ? '<span class="p-badge">' + esc(st) + '</span>' : '') + '</button>';
+    });
+    _profList.innerHTML = html || '<div class="prof-row"><span class="p-sub">暂无账号档案，请先去控制台扫码或粘贴 Cookie</span></div>';
+    Array.prototype.forEach.call(_profList.querySelectorAll('.prof-row[data-id]'), function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-id');
+        if (id === _profileId){ _profPanel.hidden = true; _profShown = false; return; }
+        fetch('/api/profiles/select', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({profile: id})
+        }).then(function(r){ return r.json(); }).then(function(j){
+          _profPanel.hidden = true; _profShown = false;
+          if (j.ok){
+            _profileId = j.profile;
+            loadData();
+          } else {
+            alert('切换失败：' + (j.error || '未知错误'));
+          }
+        }).catch(function(e){ alert('切换失败：' + e.message); });
+      });
+    });
+  }).catch(function(){});
+}
+var _logoSw = document.getElementById('logoSw');
+if (_logoSw) _logoSw.addEventListener('click', function(e){ e.stopPropagation(); toggleProfPanel(); });
+document.addEventListener('click', function(e){
+  if (_profShown && !_profPanel.contains(e.target)){ _profPanel.hidden = true; _profShown = false; }
+});
 </script>
 </body>
 </html>

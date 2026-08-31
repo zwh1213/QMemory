@@ -27,21 +27,12 @@ class ArchiveRepository:
 
     def reload(self):
         cfgj = cookiemgr.load(self.root)
-        my_uin = str(cfgj.get("uin") or "")
-        candidates = []
-        out_dir = self.root / "output"
-        if out_dir.is_dir():
-            for sub in sorted(out_dir.iterdir()):
-                if sub.is_dir():
-                    candidates.append(sub / "data.json")
-            candidates.append(out_dir / "data.json")
-        data = next((self._load_json(p) for p in candidates if p.exists()), None)
+        my_uin = str(cfgj.get("target_uin") or cfgj.get("uin") or "")
+        data = self._load_json(self.root / "data.json")
         posts = (data or {}).get("posts") if isinstance(data, dict) else []
         posts = posts if isinstance(posts, list) else []
-        # PC 卡片按 tid 归并成帖子（对齐 QQ 版 merge_pc）：
-        # 每条 feedstype 101 卡片=一个好友赞了，actor 即点赞者；评论靠 comment 字段；
-        # 帖子正文/媒体取第一张卡片的。
-        pc_bases = [cfgj.get("data_dir") or "output/datas", "output", "output_pc_fresh"]
+        # PC 卡片按 tid 归并成帖子（对齐 QQ 版 merge_pc）。
+        pc_bases = [cfgj.get("data_dir") or "datas"]
         by_tid = {}
         for base in pc_bases:
             path = self.root / base / "pc_cards.jsonl"
@@ -117,7 +108,7 @@ class ArchiveRepository:
             else:
                 posts.append(post)
         photo_map, video_map = {}, {}
-        for folder in (cfgj.get("data_dir", "output/datas"), cfgj.get("media_dir", "media")):
+        for folder in (cfgj.get("data_dir", "datas"),):
             try:
                 media = json.loads((self.root / folder / "media_map.json").read_text(encoding="utf-8"))
                 photo_map = media.get("photos") or {}
@@ -149,13 +140,12 @@ class ArchiveRepository:
             seen.add(key)
             normalized.append(item)
         details = {}
-        for dp in (self.root / "output" / "details.json", self.root / "diag" / "details.json"):
-            if dp.exists():
-                try:
-                    details = json.loads(dp.read_text(encoding="utf-8"))
-                    break
-                except (OSError, ValueError, TypeError):
-                    continue
+        dp = self.root / "details.json"
+        if dp.exists():
+            try:
+                details = json.loads(dp.read_text(encoding="utf-8"))
+            except (OSError, ValueError, TypeError):
+                details = {}
         for item in normalized:
             d = details.get(str(item.get("id") or ""))
             if not d:

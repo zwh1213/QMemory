@@ -18,10 +18,12 @@ dist/
 *.spec
 build.ps1
 build.md
+CHANGELOG.md
 
 # 运行时生成 / 用户数据（含隐私，不提交）
 config.json
 curl.txt
+qmemory.pid
 output/
 output_pc_fresh/
 output_pc_full/

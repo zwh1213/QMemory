@@ -19,7 +19,7 @@ class CrawlEngine:
         self.repository = repository
         cfgj = cookiemgr.load(self.root)
         # 数据目录跟随 config（采集实际写入位置），重启后据此恢复进度
-        self.data_dir = self.root / (cfgj.get("data_dir") or "output/datas")
+        self.data_dir = self.root / (cfgj.get("data_dir") or "datas")
         self.state_path = self.data_dir / "pc_state.json"
         self.data_path = self.data_dir / "pc_cards.jsonl"
         self.lock = threading.RLock()
@@ -69,6 +69,10 @@ class CrawlEngine:
         tmp.write_text(payload, encoding="utf-8")
         tmp.replace(self.state_path)
 
+    def is_alive(self):
+        with self.lock:
+            return bool(self.worker and self.worker.is_alive())
+
     def status(self):
         with self.lock:
             try:
@@ -109,9 +113,9 @@ class CrawlEngine:
             if self.worker and self.worker.is_alive():
                 return {"ok": False, "error": "采集进行中，请先停止"}
             cfg = cookiemgr.load(self.root)
-            data_dir = self.root / (cfg.get("data_dir") or "output/datas")
-            photos_dir = self.root / (cfg.get("photos_dir") or "output/imgs")
-            videos_dir = self.root / (cfg.get("videos_dir") or "output/videos")
+            data_dir = self.root / (cfg.get("data_dir") or "datas")
+            photos_dir = self.root / (cfg.get("photos_dir") or "imgs")
+            videos_dir = self.root / (cfg.get("videos_dir") or "videos")
             removed = {"files": [], "dirs": []}
             for name in ("pc_cards.jsonl", "pc_state.json", "media_map.json"):
                 path = data_dir / name
@@ -186,7 +190,7 @@ class CrawlEngine:
             uin = str(cfg.get("target_uin") or cfg["uin"])
             dl_photos = bool(cfg.get("download_photos", True))
             dl_videos = bool(cfg.get("download_videos", True))
-            data_dir = self.root / (cfg.get("data_dir") or "output/datas")
+            data_dir = self.root / (cfg.get("data_dir") or "datas")
             self.data_path = data_dir / "pc_cards.jsonl"
             self.state_path = data_dir / "pc_state.json"
             self.data_path.parent.mkdir(parents=True, exist_ok=True)
@@ -282,14 +286,17 @@ class CrawlEngine:
                 self.worker = None
 
     def _fetch_details(self, qz, uin):
-        """拉目标空间全部说说详情（完整评论/多图/时间/转发），写 output/details.json。"""
+        # 拉目标空间全部说说详情（完整评论/多图/时间/转发），写当前档案根目录 details.json
         try:
             moods = fetch_my_moods(qz, uin)
+        except BlockedError as exc:
+            self._log(f"详情补充：手机版接口疑似被封（{exc}），跳过")
+            return
         except Exception as exc:
-            self._log(f"详情补充跳过：{type(exc).__name__}: {exc}")
+            self._log(f"详情补充跳过（手机版接口异常）：{type(exc).__name__}: {exc}")
             return
         if not moods:
-            self._log("详情补充：mood 接口未返回数据")
+            self._log("详情补充：手机版接口正常，无更多数据")
             return
         details = {}
         for tid, mo in moods.items():
@@ -300,7 +307,7 @@ class CrawlEngine:
                 details[key] = mood_to_detail(mo, uin)
             except Exception:
                 continue
-        dp = self.root / "output" / "details.json"
+        dp = self.root / "details.json"
         dp.parent.mkdir(parents=True, exist_ok=True)
         tmp = dp.with_suffix(".tmp")
         tmp.write_text(json.dumps(details, ensure_ascii=False), encoding="utf-8")

@@ -70,15 +70,19 @@ _NICK_CACHE = {}
 
 
 def fetch_nickname(cfg, uin, use_cache=True):
-    # 解析当前登录账号昵称：config 值 → ptnick 解码 → 接口请求（请求不保存，仅返回）
-    key = f"{uin}:{cfg.get('source') or ''}"
+    # 解析 uin 的昵称：仅当 uin 为登录号时才信任 config/ptnick，
+    # 否则直接请求目标资料，避免把登录号昵称串给其他目标
+    auth_uin = str(cfg.get("auth_uin") or cfg.get("uin") or "")
+    key = f"{auth_uin}->{uin}:{cfg.get('source') or ''}"
     if use_cache and _NICK_CACHE.get(key):
         return _NICK_CACHE[key]
-    nick = str(cfg.get("nickname") or "").strip()
-    if nick and nick != "登录成功！":
-        _NICK_CACHE[key] = nick
-        return nick
-    nick = decode_ptnick(cfg.get("cookies") or {}, uin)
+    nick = ""
+    if str(uin) == auth_uin:
+        nick = str(cfg.get("nickname") or "").strip()
+        if nick and nick != "登录成功！":
+            _NICK_CACHE[key] = nick
+            return nick
+        nick = decode_ptnick(cfg.get("cookies") or {}, uin)
     if not nick:
         try:
             s = requests.Session()
@@ -616,6 +620,8 @@ def fetch_pc(qz, uin, g_tk, offset):
             d = parse_jslit(r.text)
             data = d.get("data") or {}
             main = data.get("main") or {}
+            if d.get("code") not in (0, None):
+                raise BlockedError(f"PC 墙 code={d.get('code')}: {d.get('message') or d.get('msg') or ''}")
             return data.get("data") or [], bool(main.get("hasMoreFeeds")), main.get("total_number") or main.get("totalFeeds") or main.get("totalCount") or main.get("feedCount")
         print(f"  offset={offset} 非 JSONP 响应(可能 WAF),30s 后重试 {attempt + 1}/3")
         time.sleep(30)
@@ -932,7 +938,6 @@ MY_MOODS_URL = "https://user.qzone.qq.com/proxy/domain/taotao.qq.com/cgi-bin/emo
 
 
 def fetch_my_moods(qz, uin):
-    """翻页拉自己的全部说说。返回 {tid: mood}。只作细节补充，已删除帖这里没有，维持 feed 原样。"""
     moods = {}
     pos = 0
     while True:
@@ -942,12 +947,18 @@ def fetch_my_moods(qz, uin):
         try:
             r = qz.get(MY_MOODS_URL, params=params,
                        referer=f"https://user.qzone.qq.com/{uin}/mood")
-            m = re.search(r"_preloadCallback\((.*)\)\s*;?\s*$", r.text, re.S)
-            d = json.loads(m.group(1)) if m else {}
-        except Exception:
-            break
-        if d.get("code") != 0:
-            break
+        except Exception as exc:
+            raise RuntimeError(f"mood 请求失败：{exc}") from exc
+        m = re.search(r"_preloadCallback\((.*)\)\s*;?\s*$", r.text, re.S)
+        if not m:
+            raise BlockedError("mood 接口非 JSONP 响应，疑似被风控")
+        try:
+            d = json.loads(m.group(1))
+        except Exception as exc:
+            raise RuntimeError(f"mood 响应解析失败：{exc}") from exc
+        code = d.get("code")
+        if code != 0:
+            raise BlockedError(f"mood 接口 code={code}: {d.get('message') or d.get('msg') or ''}")
         ms = d.get("msglist") or []
         if not ms:
             break
