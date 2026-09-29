@@ -35,6 +35,8 @@ python main.py
 
 所有数据保存在本地，不经过任何第三方服务器。**每个目标 QQ 号一个独立档案目录**（目录名用纯 QQ 号，昵称可能含特殊字符，不参与目录命名）：
 
+存放位置：Windows 为 `QMemory.exe` 同目录；macOS 为 `~/Library/Application Support/QMemory/`。下面是该位置下的相对结构：
+
 ```text
 output/
 ├─ .current_profile            # 当前档案指针（一个很小的文件，勿手动删）
@@ -66,9 +68,11 @@ output/
 
 ## 程序下载
 
-## 程序下载
+到 [GitHub Releases](https://github.com/zwh1213/QMemory/releases/latest) 页面下载：选一个版本，展开「Assets」，按系统选对应文件。
 
-Win10 / Win11 双击 `QMemory-vX.Y.Z.exe` 即自动打开浏览器进入控制台，无需任何额外配置。
+### Windows
+
+下载 `QMemory-vX.Y.Z.exe`，双击即自动打开浏览器进入控制台，无需任何额外配置。
 
 > **单文件说明**：`QMemory.exe`首次启动会解压依赖到系统临时目录并自动缓存；**第二次启动直接复用缓存，无需再次解压**，启动速度与普通程序一致。若系统清理了临时文件，则下一次启动会重新解压。
 >
@@ -76,7 +80,20 @@ Win10 / Win11 双击 `QMemory-vX.Y.Z.exe` 即自动打开浏览器进入控制�
 >
 > **常驻运行**：程序启动后会一直运行，关闭页面也不退出（后台采集不受影响）；如果再次双击启动，会直接接管上一次运行的实例。
 
-打包好的程序到 [GitHub Releases](https://github.com/zwh1213/QMemory/releases/latest) 页面下载：选一个版本，展开后点「Assets」下的 `QMemory-vX.Y.Z.exe`（如 `QMemory-v1.1.0.exe`）即可。
+### macOS
+
+下载 `QMemory-vX.Y.Z-macOS.zip`，解压得到 `QMemory.app`，拖进「应用程序」即可使用。
+
+> **首次打开提示「无法验证开发者」**：这是未签名应用的正常提示，不是程序有问题。任选一种方式绕过，之后双击即可正常打开：
+>
+> - **右键 → 打开**：在 Finder 里右键（或按住 Control 点按）`QMemory.app`，选「打开」，弹窗里再点一次「打开」
+> - **终端命令**：
+>
+> ```bash
+> xattr -cr /Applications/QMemory.app
+> ```
+>
+> **数据位置**：Mac 版数据不在 app 旁边，而在 `~/Library/Application Support/QMemory/`（`.app` 内部不可写，且升级会被覆盖）。在 Finder 里按 `Cmd+Shift+G` 粘贴该路径即可打开，目录结构与下方「数据存储」一致。
 
 ## 效果展示图
 

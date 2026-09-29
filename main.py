@@ -21,7 +21,15 @@ from app.account_manager import AccountManager
 from app.web import create_app
 
 
-BASE_DIR = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
+def _app_dir():
+    if not getattr(sys, "frozen", False):
+        return Path(__file__).resolve().parent
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "QMemory"
+    return Path(sys.executable).resolve().parent
+
+
+BASE_DIR = _app_dir()
 
 _PID_FILE = BASE_DIR / "qmemory.pid"
 

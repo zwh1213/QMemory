@@ -21,21 +21,18 @@ def _inside(base, path):
         return False
 
 
-APP_ROOT = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else BASE_DIR.parent
-
-
-def _full_rel(root, value):
+def _full_rel(app_root, root, value):
     # 显示用：相对程序目录的完整相对路径，如 output/昵称_QQ/imgs
     try:
-        return str((root.relative_to(APP_ROOT) / value).as_posix())
+        return str((root.relative_to(app_root) / value).as_posix())
     except ValueError:
         return str(value)
 
 
-def _strip_root(root, value):
+def _strip_root(app_root, root, value):
     # 保存用：把表单里的完整相对路径剥回档案目录内的相对值
     try:
-        prefix = str(root.relative_to(APP_ROOT).as_posix())
+        prefix = str(root.relative_to(app_root).as_posix())
     except ValueError:
         return str(value)
     if value == prefix:
@@ -264,9 +261,9 @@ def create_app(manager):
         return jsonify(ok=bool(cfg.get("uin")), uin=cfg.get("uin", ""), auth_uin=cfg.get("auth_uin") or cfg.get("uin", ""),
                        g_tk=cfg.get("g_tk", 0), target_uin=target, nickname=cfg.get("nickname") or target,
                        avatar=avatar_url(target) if target else "",
-                       photos_dir=_full_rel(context["root"], cfg.get("photos_dir") or "imgs"),
-                       videos_dir=_full_rel(context["root"], cfg.get("videos_dir") or "videos"),
-                       data_dir=_full_rel(context["root"], cfg.get("data_dir") or "datas"),
+                       photos_dir=_full_rel(manager.root, context["root"], cfg.get("photos_dir") or "imgs"),
+                       videos_dir=_full_rel(manager.root, context["root"], cfg.get("videos_dir") or "videos"),
+                       data_dir=_full_rel(manager.root, context["root"], cfg.get("data_dir") or "datas"),
                        download_photos=bool(cfg.get("download_photos", True)),
                        download_videos=bool(cfg.get("download_videos", True)), source=cfg.get("source", ""),
                        profile_id=context["id"])
@@ -285,7 +282,7 @@ def create_app(manager):
                 value = str(payload[key]).strip()
                 if Path(value).is_absolute() or ".." in Path(value).parts:
                     return jsonify(error="保存路径必须在当前账号目录内"), 400
-                cfg[key] = _strip_root(context["root"], value)
+                cfg[key] = _strip_root(manager.root, context["root"], value)
         for key in ("download_photos", "download_videos"):
             if key in payload:
                 cfg[key] = bool(payload[key])
