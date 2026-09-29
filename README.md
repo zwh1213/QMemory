@@ -82,7 +82,7 @@ output/
 
 ### macOS
 
-下载 `QMemory-vX.Y.Z-macOS.zip`，解压得到 `QMemory.app`，拖进「应用程序」即可使用。
+下载 `QMemory-vX.Y.Z-macOS-arm64.zip`（Apple 芯片 M 系列）或 `QMemory-vX.Y.Z-macOS-x86_64.zip`（Intel 芯片），解压得到 `QMemory.app`，拖进「应用程序」即可使用。不确定芯片型号就点左上角苹果图标 →「关于本机」看「芯片」一栏。
 
 > **首次打开提示「无法验证开发者」**：这是未签名应用的正常提示，不是程序有问题。任选一种方式绕过，之后双击即可正常打开：
 >
