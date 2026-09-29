@@ -15,8 +15,16 @@ permissions:
   contents: write
 
 jobs:
-  macos:
-    runs-on: macos-14
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
 
@@ -54,46 +62,41 @@ jobs:
           if [ -z "$VERSION" ]; then VERSION="${GITHUB_REF_NAME}"; fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
-          ARCH_FLAG=""
-          if python -c "import sysconfig,sys; sys.exit(0 if 'universal2' in sysconfig.get_platform() else 1)"; then
-            ARCH_FLAG="--target-arch universal2"
-            echo "Python 为 universal2，构建通用二进制"
-          else
-            echo "Python 为 $(python -c 'import sysconfig; print(sysconfig.get_platform())')，构建单架构"
-          fi
-
           python -m PyInstaller --noconfirm --onefile --windowed \
             --name "QMemory-$VERSION" \
             --icon imgs/icon.icns \
             --osx-bundle-identifier com.zwh1213.qmemory \
             --add-data "templates:templates" \
             --add-data "imgs/icon.ico:imgs" \
-            $ARCH_FLAG \
             main.py --log-level=WARN
 
           cd dist
-          zip -r -y "QMemory-$VERSION-macOS.zip" "QMemory-$VERSION.app"
+          zip -r -y "QMemory-$VERSION-macOS-${{ matrix.arch }}.zip" "QMemory-$VERSION.app"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: QMemory-macOS
+          name: QMemory-macOS-${{ matrix.arch }}
           path: dist/*.zip
           if-no-files-found: error
+
+  release:
+    needs: build
+    if: github.event.inputs.tag != '' || startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: QMemory-macOS-*
+          merge-multiple: true
+          path: dist
 
       - name: 上传到 Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.event.inputs.tag }}"
-          if [ -z "$TAG" ]; then
-            case "${GITHUB_REF}" in
-              refs/tags/*) TAG="${GITHUB_REF_NAME}" ;;
-            esac
-          fi
-          if [ -z "$TAG" ]; then
-            echo "未指定 Release，跳过上传（artifact 已产出）"
-            exit 0
-          fi
+          if [ -z "$TAG" ]; then TAG="${GITHUB_REF_NAME}"; fi
+          ls -lh dist
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" dist/*.zip --clobber
           else
