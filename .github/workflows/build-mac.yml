@@ -97,8 +97,8 @@ jobs:
           TAG="${{ github.event.inputs.tag }}"
           if [ -z "$TAG" ]; then TAG="${GITHUB_REF_NAME}"; fi
           ls -lh dist
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/*.zip --clobber
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/*.zip --clobber --repo "$GITHUB_REPOSITORY"
           else
-            gh release create "$TAG" dist/*.zip --title "$TAG" --generate-notes
+            gh release create "$TAG" dist/*.zip --title "$TAG" --generate-notes --repo "$GITHUB_REPOSITORY"
           fi
